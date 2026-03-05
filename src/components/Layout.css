@@ -1,0 +1,25 @@
+/* Layout Container */
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #fff;
+}
+
+/* Main Content Area */
+.app-main {
+  flex: 1;
+  width: 100%;
+  background: #f8f9fa;
+}
+
+/* Any layout-specific responsive styles */
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
+  .app-main {
+    width: 100%;
+  }
+}
