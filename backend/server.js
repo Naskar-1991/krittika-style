@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -10,7 +9,8 @@ const cartRoute = require("./routes/cart");
 const usersRoute = require("./routes/users");
 const paymentRoute = require("./routes/payment");
 const webhooksRoute = require("./routes/webhooks");
-
+const dotenv = require('dotenv')
+dotenv.config();
 const app = express();
 app.use(cors());
 // allow JSON payloads and urlencoded for form submissions
@@ -35,5 +35,6 @@ app.use("/api/orders", ordersRoute);
 app.use("/api/users", usersRoute);
 app.use("/api/payment", paymentRoute);
 app.use("/api/webhooks", webhooksRoute);
+console.log(process.env.DB_HOST, process.env.DB_USER, process.env.DB_NAME)
 const PORT = process.env.PORT || 5500;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
