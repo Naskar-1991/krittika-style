@@ -37,4 +37,4 @@ app.use("/api/payment", paymentRoute);
 app.use("/api/webhooks", webhooksRoute);
 console.log(process.env.DB_HOST, process.env.DB_USER, process.env.DB_NAME)
 const PORT = process.env.PORT || 5500;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
