@@ -1,6 +1,3 @@
-const API_URL =
-  window.location.hostname.includes('dev.krittikastyle.com')
-    ? 'https://api.krittikastyle.com'
-    : 'http://localhost:5500';
+const API_URL = process.env.REACT_APP_API_DEV_URL;
 
 export default API_URL;
