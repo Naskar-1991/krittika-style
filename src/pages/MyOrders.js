@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import "./MyOrders.css";
+import API_URL from "../api_connection/BackendAPIConnection";
 
 function MyOrders() {
   const { user } = useContext(AuthContext);
@@ -24,7 +25,7 @@ function MyOrders() {
   const fetchOrders = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5500/api/orders/user/my-orders", {
+      const response = await fetch(`${API_URL}/api/orders/user/my-orders`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
+import API_URL from "../api_connection/BackendAPIConnection";
 
 const Checkout = () => {
   const { cart, clearCart } = useContext(CartContext);
@@ -111,7 +112,7 @@ const Checkout = () => {
       const totalAmount = parseFloat(getTotalPrice());
 
       // Step 1: Create order in database
-      const orderResponse = await fetch("http://localhost:5500/api/orders", {
+      const orderResponse = await fetch(`${API_URL}/api/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -145,7 +146,7 @@ const Checkout = () => {
 
       // Step 2: Create Razorpay order
       setPaymentProcessing(true);
-      const paymentOrderResponse = await fetch("http://localhost:5500/api/payment/create-order", {
+      const paymentOrderResponse = await fetch(`${API_URL}/api/payment/create-order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -176,7 +177,7 @@ const Checkout = () => {
         handler: async (response) => {
           // Payment successful - verify on backend
           try {
-            const verifyResponse = await fetch("http://localhost:5500/api/payment/verify-payment", {
+            const verifyResponse = await fetch(`${API_URL}/api/payment/verify-payment`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -227,7 +228,7 @@ const Checkout = () => {
             setLoading(false);
             // Mark order as failed
             try {
-              await fetch("http://localhost:5500/api/payment/handle-failure", {
+              await fetch(`${API_URL}/api/payment/handle-failure`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",

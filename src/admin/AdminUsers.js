@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import API_URL from "../api_connection/BackendAPIConnection";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -24,7 +25,7 @@ const AdminUsers = () => {
         return;
       }
 
-      const response = await fetch("http://localhost:5500/api/users", {
+      const response = await fetch(`${API_URL}/api/users`, {
         headers: { 
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
@@ -85,7 +86,7 @@ const AdminUsers = () => {
         updateData.password = editFormData.password;
       }
 
-      const response = await fetch(`http://localhost:5500/api/users/${editingId}`, {
+      const response = await fetch(`${API_URL}/api/users/${editingId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -111,7 +112,7 @@ const AdminUsers = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:5500/api/users/${userId}`, {
+      const response = await fetch(`${API_URL}/api/users/${userId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });

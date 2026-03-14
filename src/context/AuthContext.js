@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
+import API_URL from "../api_connection/BackendAPIConnection";
 
 export const AuthContext = createContext();
 
@@ -11,7 +12,7 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
     if (token) {
       // Fetch user profile to get role
-      fetch("http://localhost:5500/api/auth/profile", {
+      fetch(`${API_URL}api/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then(res => res.json())

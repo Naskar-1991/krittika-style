@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import "./Signup.css";
+import API_URL from "../api_connection/BackendAPIConnection";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -43,7 +44,7 @@ const Login = () => {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5500/api/auth/login", {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -57,7 +58,7 @@ const Login = () => {
       }
 
       // Fetch user profile to get role
-      const profileRes = await fetch("http://localhost:5500/api/auth/profile", {
+      const profileRes = await fetch(`${API_URL}/api/auth/profile`, {
         headers: { Authorization: `Bearer ${data.token}` },
       });
       const profileData = await profileRes.json();

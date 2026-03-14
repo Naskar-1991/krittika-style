@@ -4,6 +4,7 @@ import Hero from "../components/Hero";
 import ProductCard from "../components/ProductCard";
 import { fetchCategories } from "../services/categoryService";
 import "./Home.css";
+import API_URL from "../api_connection/BackendAPIConnection";
 
 function Home() {
   const [products, setProducts] = useState([]);
@@ -18,7 +19,7 @@ function Home() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch("http://localhost:5500/api/products");
+      const response = await fetch(`${API_URL}/api/products`);
       const data = await response.json();
       setProducts(data.slice(0, 8)); // Show top 8 products
       setLoading(false);
@@ -34,7 +35,7 @@ function Home() {
       setCategories(cats);
 
       // Fetch all products to show category-wise items
-      const response = await fetch("http://localhost:5500/api/products");
+      const response = await fetch(`${API_URL}/api/products`);
       const allProducts = await response.json();
 
       // Group products by category

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import API_URL from "../api_connection/BackendAPIConnection";
 import { AuthContext } from "../context/AuthContext";
 import { fetchCategories } from "../services/categoryService";
 
@@ -30,7 +31,7 @@ const ManageProducts = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:5500/api/products");
+      const response = await fetch(`${API_URL}/api/products`);
       if (!response.ok) throw new Error("Failed to fetch products");
       const data = await response.json();
       setProducts(data);
@@ -111,8 +112,8 @@ const ManageProducts = () => {
 
     try {
       const url = editingId
-        ? `http://localhost:5500/api/products/${editingId}`
-        : "http://localhost:5500/api/products";
+        ? `${API_URL}/api/products/${editingId}`
+        : `${API_URL}/api/products`;
       const method = editingId ? "PUT" : "POST";
 
       let response;
@@ -198,7 +199,7 @@ const ManageProducts = () => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
     try {
-      const response = await fetch(`http://localhost:5500/api/products/${id}`, {
+      const response = await fetch(`${API_URL}/api/products/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${user.token}`,

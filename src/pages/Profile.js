@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import "./Profile.css";
+import API_URL from "../api_connection/BackendAPIConnection";
 
 function Profile() {
   const { user, logout } = useContext(AuthContext);
@@ -35,7 +36,7 @@ function Profile() {
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5500/api/auth/profile", {
+      const response = await fetch(`${API_URL}/api/auth/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -85,7 +86,7 @@ function Profile() {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:5500/api/users/${user.id}/profile`, {
+      const response = await fetch(`${API_URL}/api/users/${user.id}/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -137,7 +138,7 @@ function Profile() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5500/api/users/${user.id}/change-password`,
+        `${API_URL}/api/users/${user.id}/change-password`,
         {
           method: "PUT",
           headers: {

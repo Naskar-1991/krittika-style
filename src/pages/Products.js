@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import CategorySidebar from "../components/CategorySidebar";
 import "./Products.css";
+import API_URL from "../api_connection/BackendAPIConnection";
 
 const Products = () => {
   const [searchParams] = useSearchParams();
@@ -33,7 +34,7 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch("http://localhost:5500/api/products");
+      const response = await fetch(`${API_URL}/api/products`);
       if (!response.ok) throw new Error("Failed to fetch products");
       const data = await response.json();
       setProducts(data);

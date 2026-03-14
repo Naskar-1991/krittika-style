@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-
+import API_URL from "../api_connection/BackendAPIConnection";
 const ManageOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ const ManageOrders = () => {
       setLoading(true);
       const token = localStorage.getItem("token");
       
-      const response = await fetch("http://localhost:5500/api/orders", {
+      const response = await fetch(`${API_URL}/api/orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -39,7 +39,7 @@ const ManageOrders = () => {
       setLoadingDetails(true);
       const token = localStorage.getItem("token");
       
-      const response = await fetch(`http://localhost:5500/api/orders/${orderId}`, {
+      const response = await fetch(`${API_URL}/api/orders/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -59,7 +59,7 @@ const ManageOrders = () => {
       setUpdatingStatus(true);
       const token = localStorage.getItem("token");
       
-      const response = await fetch(`http://localhost:5500/api/orders/${orderId}/status`, {
+      const response = await fetch(`${API_URL}/api/orders/${orderId}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -88,7 +88,7 @@ const ManageOrders = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:5500/api/orders/${orderId}`, {
+      const response = await fetch(`${API_URL}/api/orders/${orderId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });

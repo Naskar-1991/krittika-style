@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import "./ProductDetails.css";
+import API_URL from "../api_connection/BackendAPIConnection";
 
 function ProductDetails() {
   const { id } = useParams();
@@ -23,14 +24,14 @@ function ProductDetails() {
   const fetchProductDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5500/api/products/${id}`);
+      const response = await fetch(`${API_URL}/api/products/${id}`);
       if (!response.ok) throw new Error("Product not found");
       
       const data = await response.json();
       setProduct(data);
       
       // Fetch related products (same category)
-      const allProductsResponse = await fetch("http://localhost:5500/api/products");
+      const allProductsResponse = await fetch(`${API_URL}/api/products`);
       if (allProductsResponse.ok) {
         const allProducts = await allProductsResponse.json();
         const related = allProducts

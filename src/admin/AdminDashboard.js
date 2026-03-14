@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import API_URL from "../api_connection/BackendAPIConnection";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -20,19 +21,19 @@ const AdminDashboard = () => {
       const token = localStorage.getItem("token");
 
       // Fetch products count
-      const productsRes = await fetch("http://localhost:5500/api/products", {
+      const productsRes = await fetch(`${API_URL}/api/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const products = await productsRes.json();
 
       // Fetch users count
-      const usersRes = await fetch("http://localhost:5500/api/users", {
+      const usersRes = await fetch(`${API_URL}/api/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const users = await usersRes.json();
 
       // Fetch orders
-      const ordersRes = await fetch("http://localhost:5500/api/orders", {
+      const ordersRes = await fetch(`${API_URL}/api/orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const orders = await ordersRes.json();

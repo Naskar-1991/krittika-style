@@ -1,9 +1,9 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5500/api";
+import API_URL from "../api_connection/BackendAPIConnection";
 
 // Get all active categories
 export const fetchCategories = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories`);
+    const response = await fetch(`${API_URL}/api/categories`);
     if (!response.ok) throw new Error("Failed to fetch categories");
     return await response.json();
   } catch (error) {
@@ -15,7 +15,7 @@ export const fetchCategories = async () => {
 // Get category by slug
 export const fetchCategoryBySlug = async (slug) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories/${slug}`);
+    const response = await fetch(`${API_URL}/api/categories/${slug}`);
     if (!response.ok) throw new Error("Failed to fetch category");
     return await response.json();
   } catch (error) {
@@ -27,7 +27,7 @@ export const fetchCategoryBySlug = async (slug) => {
 // Get category by ID
 export const fetchCategoryById = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories/id/${id}`);
+    const response = await fetch(`${API_URL}/api/categories/id/${id}`);
     if (!response.ok) throw new Error("Failed to fetch category");
     return await response.json();
   } catch (error) {
@@ -39,7 +39,7 @@ export const fetchCategoryById = async (id) => {
 // Admin: Get all categories (including inactive)
 export const fetchAllCategories = async (token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories/all`, {
+    const response = await fetch(`${API_URL}/api/categories/all`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -55,7 +55,7 @@ export const fetchAllCategories = async (token) => {
 // Admin: Create category
 export const createCategory = async (categoryData, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories`, {
+    const response = await fetch(`${API_URL}/api/categories`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -74,7 +74,7 @@ export const createCategory = async (categoryData, token) => {
 // Admin: Update category
 export const updateCategory = async (id, categoryData, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
+    const response = await fetch(`${API_URL}/api/categories/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -93,7 +93,7 @@ export const updateCategory = async (id, categoryData, token) => {
 // Admin: Delete category
 export const deleteCategory = async (id, token) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
+    const response = await fetch(`${API_URL}/api/categories/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
