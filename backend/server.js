@@ -23,9 +23,7 @@ const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
-
 // serve uploaded files statically
-app.use("/", "Node Js is connected !!");
 app.use("/uploads", express.static(uploadDir));
 app.use("/api/auth", authRoute);
 app.use("/api/products", productsRoute);
