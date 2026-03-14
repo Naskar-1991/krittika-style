@@ -25,8 +25,8 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // serve uploaded files statically
+app.use("/", "Node Js is connected !!");
 app.use("/uploads", express.static(uploadDir));
-
 app.use("/api/auth", authRoute);
 app.use("/api/products", productsRoute);
 app.use("/api/categories", categoriesRoute);
