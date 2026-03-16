@@ -12,7 +12,11 @@ const webhooksRoute = require("./routes/webhooks");
 const dotenv = require('dotenv')
 dotenv.config();
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'https://dev.krittikastyle.com', methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true, allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // allow JSON payloads and urlencoded for form submissions
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
