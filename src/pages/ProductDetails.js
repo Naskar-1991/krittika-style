@@ -1,13 +1,21 @@
 import React, { useEffect, useState, useContext } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
+import { WishlistContext } from "../context/WishlistContext";
+import { AuthContext } from "../context/AuthContext";
 import "./ProductDetails.css";
 import API_URL from "../api_connection/BackendAPIConnection";
+import ReviewForm from "../components/ReviewForm";
+import ReviewsList from "../components/ReviewsList";
+import RatingSummary from "../components/RatingSummary";
 
 function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addToCart } = useContext(CartContext);
+  const { isInWishlist, toggleWishlist } = useContext(WishlistContext);
+  const { user } = useContext(AuthContext);
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,11 +23,30 @@ function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [wishlistMessage, setWishlistMessage] = useState("");
+  const [refreshReviews, setRefreshReviews] = useState(0);
+  const [ratingStats, setRatingStats] = useState({
+    total_reviews: 0,
+    average_rating: 0,
+  });
 
   useEffect(() => {
     fetchProductDetails();
+    fetchRatingStats();
     window.scrollTo(0, 0);
   }, [id]);
+
+  const fetchRatingStats = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/reviews/stats/${id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setRatingStats(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch rating stats:", err);
+    }
+  };
 
   const fetchProductDetails = async () => {
     try {
@@ -59,6 +86,34 @@ function ProductDetails() {
   const handleQuantityChange = (value) => {
     const newQuantity = Math.max(1, Math.min(product.stock || 100, value));
     setQuantity(newQuantity);
+  };
+
+  const handleWishlistToggle = async () => {
+    // Check if user is logged in
+    if (!user) {
+      // Redirect to login if not logged in
+      navigate("/login", { state: { from: location.pathname } });
+      return;
+    }
+
+    try {
+      setWishlistMessage("");
+      const wasInWishlist = isInWishlist(product.id);
+      const success = await toggleWishlist(product);
+      
+      if (success) {
+        const message = wasInWishlist 
+          ? "Removed from wishlist!" 
+          : "Added to wishlist!";
+        setWishlistMessage(message);
+        // Clear message after 3 seconds
+        setTimeout(() => setWishlistMessage(""), 3000);
+      }
+    } catch (err) {
+      console.error("Error toggling wishlist:", err);
+      setWishlistMessage("Failed to update wishlist");
+      setTimeout(() => setWishlistMessage(""), 3000);
+    }
   };
 
   // Get current image
@@ -122,6 +177,18 @@ function ProductDetails() {
               {product.stock === 0 && (
                 <div className="out-of-stock-overlay">Out of Stock</div>
               )}
+              {/* Wishlist Icon Button */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleWishlistToggle();
+                }}
+                className={`wishlist-icon-btn ${isInWishlist(product.id) ? "in-wishlist" : ""}`}
+                title={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+              >
+                {isInWishlist(product.id) ? "❤️" : "🤍"}
+              </button>
             </div>
 
             {/* Thumbnail Gallery */}
@@ -146,8 +213,18 @@ function ProductDetails() {
             <div className="product-header">
               <h1>{product.name}</h1>
               <div className="product-rating-section">
-                <span className="stars">⭐⭐⭐⭐⭐</span>
-                <span className="rating-text">(127 customer reviews)</span>
+                <span className="stars">
+                  {Array(5)
+                    .fill(0)
+                    .map((_, i) => (
+                      <span key={i}>
+                        {i < Math.round(ratingStats.average_rating) ? "⭐" : "☆"}
+                      </span>
+                    ))}
+                </span>
+                <span className="rating-text">
+                  ({ratingStats.total_reviews} customer review{ratingStats.total_reviews !== 1 ? "s" : ""})
+                </span>
               </div>
             </div>
 
@@ -212,7 +289,16 @@ function ProductDetails() {
               >
                 🛒 Add to Cart
               </button>
-              <button className="btn-wishlist">❤️ Add to Wishlist</button>
+              <button 
+                onClick={handleWishlistToggle}
+                className={`btn-wishlist ${isInWishlist(product.id) ? "in-wishlist" : ""}`}
+              >
+                {isInWishlist(product.id) ? "❤️" : "🤍"} 
+                {isInWishlist(product.id) ? "Remove from Wishlist" : "Add to Wishlist"}
+              </button>
+              {wishlistMessage && (
+                <span className="wishlist-message">{wishlistMessage}</span>
+              )}
             </div>
 
             {/* Shipping Info */}
@@ -266,24 +352,16 @@ function ProductDetails() {
 
             {activeTab === "reviews" && (
               <div className="tab-content reviews-tab">
-                <h3>Customer Reviews</h3>
-                <div className="reviews-list">
-                  {[
-                    { author: "Rajesh Kumar", rating: 5, text: "Excellent product! Great quality and fast delivery." },
-                    { author: "Priya Singh", rating: 5, text: "Very satisfied with the purchase. Highly recommended!" },
-                    { author: "Amit Patel", rating: 4, text: "Good product. Price could be a bit lower." },
-                  ].map((review, index) => (
-                    <div key={index} className="review-item">
-                      <div className="review-header">
-                        <span className="review-author">{review.author}</span>
-                        <span className="review-rating">
-                          {"⭐".repeat(review.rating)}
-                        </span>
-                      </div>
-                      <p className="review-text">{review.text}</p>
-                    </div>
-                  ))}
-                </div>
+                <RatingSummary productId={id} key={`rating-${refreshReviews}`} />
+                <ReviewForm
+                  productId={parseInt(id)}
+                  onReviewSubmitted={() => {
+                    setRefreshReviews(refreshReviews + 1);
+                    fetchRatingStats();
+                  }}
+                  isLoggedIn={!!user}
+                />
+                <ReviewsList productId={parseInt(id)} refreshTrigger={refreshReviews} />
               </div>
             )}
 

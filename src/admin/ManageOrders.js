@@ -45,6 +45,25 @@ const ManageOrders = () => {
 
       if (!response.ok) throw new Error("Failed to fetch order details");
       const data = await response.json();
+      
+      // Parse shipping_info JSONB if it's a string
+      if (data.shipping_info && typeof data.shipping_info === 'string') {
+        const shippingParsed = JSON.parse(data.shipping_info);
+        data.shipping_name = `${shippingParsed.firstName} ${shippingParsed.lastName}`;
+        data.shipping_address = shippingParsed.address;
+        data.shipping_city = shippingParsed.city;
+        data.shipping_state = shippingParsed.state;
+        data.shipping_zip = shippingParsed.zipcode;
+        data.shipping_phone = shippingParsed.phone;
+      } else if (data.shipping_info && typeof data.shipping_info === 'object') {
+        data.shipping_name = `${data.shipping_info.firstName} ${data.shipping_info.lastName}`;
+        data.shipping_address = data.shipping_info.address;
+        data.shipping_city = data.shipping_info.city;
+        data.shipping_state = data.shipping_info.state;
+        data.shipping_zip = data.shipping_info.zipcode;
+        data.shipping_phone = data.shipping_info.phone;
+      }
+      
       setSelectedOrderDetails(data);
       setSelectedOrderId(orderId);
     } catch (err) {

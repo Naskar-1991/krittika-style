@@ -5,7 +5,14 @@ const jwt = require("jsonwebtoken");
 const ShiprocketClient = require("../shiprocketService");
 
 const SECRET = process.env.JWT_SECRET || "supersecret";
-const shiprocket = new ShiprocketClient();
+
+// Use global shiprocket instance (initialized in server.js)
+const getShiprocket = () => {
+  if (!global.shiprocket) {
+    throw new Error('Shiprocket client not initialized. Check server startup logs.');
+  }
+  return global.shiprocket;
+};
 
 // Middleware to verify JWT
 const authenticateToken = (req, res, next) => {
@@ -85,10 +92,10 @@ router.post("/", authenticateToken, async (req, res) => {
         const product = productResult.rows[0];
         totalWeight += (product.weight || 0.5) * (item.quantity || 1);
         orderItems.push({
-          name: product.name,
+          name: product.name || "",
           sku: product.id,
-          units: item.quantity || 1,
-          selling_price: item.price || 0,
+          units: parseInt(item.quantity || 1),
+          selling_price: parseFloat(item.price || 0),
           discount: 0,
           tax: 0,
           hsn_code: product.hsn_code || ""
@@ -96,54 +103,265 @@ router.post("/", authenticateToken, async (req, res) => {
       }
     }
 
-    // Prepare Shiprocket order data
+    // Prepare Shiprocket order data with strict validation
+    const customerName = user.name || (shippingInfo.firstName && shippingInfo.lastName ? `${shippingInfo.firstName} ${shippingInfo.lastName}` : "Customer");
+    
+    // Log raw input data for debugging
+    console.log('📦 CHECKOUT DATA RECEIVED:', {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone
+      },
+      shippingInfo: shippingInfo
+    });
+
+    // Sanitize and validate phone number (must be digits only, 10 digits without country code)
+    const cleanPhone = (phoneStr) => {
+      const cleaned = (phoneStr || "").toString().replace(/\D/g, ''); // Remove all non-numeric chars
+      
+      // Handle different Indian phone formats:
+      // 919876543210 (12 digits with country code 91) → 9876543210
+      // 07586826861 (11 digits with leading 0) → 7586826861
+      let finalPhone = cleaned;
+      
+      // Remove country code if present (91 at start)
+      if (finalPhone.length === 12 && finalPhone.startsWith('91')) {
+        finalPhone = finalPhone.slice(2); // Remove leading 91, now 10 digits
+      }
+      
+      // Remove leading 0 if present (for landlines) - 0 followed by 10 digits becomes 10 digits
+      if (finalPhone.length === 11 && finalPhone.startsWith('0')) {
+        finalPhone = finalPhone.slice(1); // Remove leading 0
+      }
+      
+      // Final validation: must be exactly 10 digits
+      return finalPhone.length === 10 ? finalPhone : "";
+    };
+
+    // Validate pincode (must be digits, ideally 6 for India)
+    const cleanPincode = (pincodeStr) => {
+      const cleaned = (pincodeStr || "").toString().replace(/\D/g, '');
+      return cleaned.length >= 5 ? cleaned : ""; // Accept 5-6 digit pincodes
+    };
+
+    // Validate address - ensure non-empty
+    const cleanAddress = (addressStr) => {
+      const cleaned = (addressStr || "").trim();
+      return cleaned.length >= 5 ? cleaned : ""; // Minimum 5 characters
+    };
+
+    // Map full state names to state codes (Shiprocket requires state codes)
+    const stateMap = {
+      'Andhra Pradesh': 'AP', 'Arunachal Pradesh': 'AR', 'Assam': 'AS', 'Bihar': 'BR',
+      'Chhattisgarh': 'CG', 'Goa': 'GA', 'Gujarat': 'GJ', 'Haryana': 'HR',
+      'Himachal Pradesh': 'HP', 'Jharkhand': 'JH', 'Karnataka': 'KA', 'Kerala': 'KL',
+      'Madhya Pradesh': 'MP', 'Maharashtra': 'MH', 'Manipur': 'MN', 'Meghalaya': 'ML',
+      'Mizoram': 'MZ', 'Nagaland': 'NL', 'Odisha': 'OR', 'Punjab': 'PB',
+      'Rajasthan': 'RJ', 'Sikkim': 'SK', 'Tamil Nadu': 'TN', 'Telangana': 'TG',
+      'Tripura': 'TR', 'Uttar Pradesh': 'UP', 'Uttarakhand': 'UT', 'West Bengal': 'WB',
+      'Dadra and Nagar Haveli': 'DN', 'Daman and Diu': 'DD', 'Lakshadweep': 'LD',
+      'Puducherry': 'PY', 'Andaman and Nicobar': 'AN', 'Chandigarh': 'CH',
+      'Delhi': 'DL', 'Ladakh': 'LA', 'Jammu and Kashmir': 'JK'
+    };
+
+    // Convert state name to code if needed
+    const getStateCode = (stateInput) => {
+      if (!stateInput) return "";
+      const trimmed = stateInput.trim();
+      // If it's already a code (2 letters), return as is
+      if (trimmed.length === 2 && /^[A-Z]{2}$/.test(trimmed)) {
+        return trimmed;
+      }
+      // Otherwise, look up in map
+      return stateMap[trimmed] || trimmed; // Return code or original if not found
+    };
+
+    const billingPhone = cleanPhone(user.phone || shippingInfo.phone);
+    const billingPincode = cleanPincode(shippingInfo.zipcode);
+    const billingState = getStateCode(shippingInfo.state); // Convert to state code
+    const shippingState = billingState; // Same state for shipping
+    const billingAddress = cleanAddress(shippingInfo.address);
+    const billingCity = (shippingInfo.city || "").trim();
+
+    // Log phone cleaning for debugging
+    const rawPhone = user.phone || shippingInfo.phone;
+    if (rawPhone && rawPhone !== billingPhone) {
+      console.log(`📞 Phone cleaned: "${rawPhone}" → "${billingPhone}"`);
+    }
+
+    // Log state code conversion
+    const rawState = shippingInfo.state;
+    if (rawState && rawState !== billingState) {
+      console.log(`🏷️  State converted: "${rawState}" → "${billingState}"`);
+    }
+
+    // Validate all required fields BEFORE creating Shiprocket order
+    const validationErrors = [];
+    if (!customerName || customerName === "Customer") {
+      validationErrors.push(`❌ Customer name: "${customerName}" (user.name: "${user.name}", firstName: "${shippingInfo.firstName}", lastName: "${shippingInfo.lastName}")`);
+    } else {
+      console.log(`✅ Customer name: "${customerName}"`);
+    }
+    if (!billingAddress) {
+      validationErrors.push(`❌ Address: empty (input: "${shippingInfo.address}", cleaned: "${billingAddress}")`);
+    } else {
+      console.log(`✅ Address: "${billingAddress}"`);
+    }
+    if (!billingCity) {
+      validationErrors.push(`❌ City: empty (input: "${shippingInfo.city}")`);
+    } else {
+      console.log(`✅ City: "${billingCity}"`);
+    }
+    if (!billingState) {
+      validationErrors.push(`❌ State: invalid (input: "${shippingInfo.state}", code: "${billingState}" - state not found in map)`);
+    } else {
+      console.log(`✅ State: "${billingState}" (code for "${shippingInfo.state}")`);
+    }
+    if (!billingPincode) {
+      validationErrors.push(`❌ Pincode: invalid (input: "${shippingInfo.zipcode}", cleaned: "${billingPincode}")`);
+    } else {
+      console.log(`✅ Pincode: "${billingPincode}"`);
+    }
+    if (!billingPhone) {
+      validationErrors.push(`❌ Phone: invalid (user.phone: "${user.phone}", shippingInfo.phone: "${shippingInfo.phone}", cleaned: "${billingPhone}" - must be exactly 10 digits, without country code)`);
+    } else {
+      console.log(`✅ Phone: "${billingPhone}" (cleaned from raw value)`);
+    }
+
+    // Log validation results
+    console.log(`🔍 VALIDATION CHECK - Errors: ${validationErrors.length}`);
+    if (validationErrors.length > 0) {
+      console.error('❌ SHIPROCKET VALIDATION FAILED:');
+      validationErrors.forEach(error => console.error(`   - ${error}`));
+      console.log('📝 Cleaned Data:', {
+        customerName,
+        billingAddress,
+        billingCity,
+        billingState,
+        billingPincode,
+        billingPhone
+      });
+    } else {
+      console.log('✅ All validation checks passed!');
+    }
+
     const shiprocketOrderData = {
       order_id: `ORDER-${order.id}`,
       order_date: new Date().toISOString().split('T')[0],
       pickup_location_id: process.env.SHIPROCKET_WAREHOUSE_ID || '50403',
-      billing_customer_name: user.name || shippingInfo.firstName + " " + shippingInfo.lastName,
-      billing_email: user.email,
-      billing_phone: user.phone || shippingInfo.phone,
-      billing_address: shippingInfo.address,
-      billing_city: shippingInfo.city,
-      billing_state: shippingInfo.state,
-      billing_country: shippingInfo.country || "India",
-      billing_pincode: shippingInfo.zipcode,
-      shipping_customer_name: shippingInfo.firstName + " " + shippingInfo.lastName,
-      shipping_email: user.email,
-      shipping_phone: shippingInfo.phone,
-      shipping_address: shippingInfo.address,
-      shipping_city: shippingInfo.city,
-      shipping_state: shippingInfo.state,
-      shipping_country: shippingInfo.country || "India",
-      shipping_pincode: shippingInfo.zipcode,
-      order_items: orderItems,
-      sub_total: totalAmount || 0,
-      weight: totalWeight || 1
+      billing_customer_name: customerName || '',
+      billing_email: user.email || shippingInfo.email || "default@example.com",
+      billing_phone: billingPhone || '',
+      billing_address: billingAddress || '',
+      billing_city: billingCity || '',
+      billing_state: billingState || '',
+      billing_country: (shippingInfo.country || "India").trim() || 'India',
+      billing_pincode: billingPincode || '',
+      shipping_is_default: true,
+      shipping_customer_name: customerName || '',
+      shipping_email: user.email || shippingInfo.email || "default@example.com",
+      shipping_phone: billingPhone || '',
+      shipping_address: billingAddress || '',
+      shipping_city: billingCity || '',
+      shipping_state: billingState || '',
+      shipping_country: (shippingInfo.country || "India").trim() || 'India',
+      shipping_pincode: billingPincode || '',
+      order_items: orderItems || [],
+      sub_total: parseFloat(totalAmount || 0),
+      length: 10,
+      breadth: 10,
+      height: 10,
+      weight: parseFloat(totalWeight || 1)
     };
 
-    // Try to create order in Shiprocket (non-blocking - if it fails, order still exists locally)
-    try {
-      const shiprocketResponse = await shiprocket.createOrder(shiprocketOrderData);
-      console.log('Shiprocket Order Created:', shiprocketResponse);
-      
-      // Update order with Shiprocket reference if available
-      if (shiprocketResponse.order_id) {
-        await pool.query(
-          "UPDATE orders SET is_shiprocket_generated=$1 WHERE id=$2",
-          [true, order.id]
-        );
+    console.log('\n📦 FINAL SHIPROCKET ORDER DATA:');
+    console.log(JSON.stringify({
+      order_id: shiprocketOrderData.order_id,
+      billing_customer_name: shiprocketOrderData.billing_customer_name,
+      billing_phone: shiprocketOrderData.billing_phone,
+      billing_address: shiprocketOrderData.billing_address,
+      billing_city: shiprocketOrderData.billing_city,
+      billing_state: shiprocketOrderData.billing_state,
+      billing_pincode: shiprocketOrderData.billing_pincode,
+      shipping_phone: shiprocketOrderData.shipping_phone,
+      shipping_address: shiprocketOrderData.shipping_address,
+      shipping_city: shiprocketOrderData.shipping_city,
+      shipping_state: shiprocketOrderData.shipping_state,
+      shipping_pincode: shiprocketOrderData.shipping_pincode
+    }, null, 2));
+
+    // Additional check: Ensure address fields are NOT empty before sending to Shiprocket
+    const hasCompleteAddress = 
+      shiprocketOrderData.billing_address && shiprocketOrderData.billing_address.trim() !== '' &&
+      shiprocketOrderData.billing_city && shiprocketOrderData.billing_city.trim() !== '' &&
+      shiprocketOrderData.billing_state && shiprocketOrderData.billing_state.trim() !== '' &&
+      shiprocketOrderData.billing_pincode && shiprocketOrderData.billing_pincode.trim() !== '' &&
+      shiprocketOrderData.shipping_address && shiprocketOrderData.shipping_address.trim() !== '' &&
+      shiprocketOrderData.shipping_city && shiprocketOrderData.shipping_city.trim() !== '' &&
+      shiprocketOrderData.shipping_state && shiprocketOrderData.shipping_state.trim() !== '' &&
+      shiprocketOrderData.shipping_pincode && shiprocketOrderData.shipping_pincode.trim() !== '';
+
+    if (!hasCompleteAddress) {
+      console.warn('⏭️  SKIPPING SHIPROCKET - Incomplete address information');
+      console.warn('Missing address fields:', {
+        billing_address: shiprocketOrderData.billing_address || 'MISSING',
+        billing_city: shiprocketOrderData.billing_city || 'MISSING',
+        billing_state: shiprocketOrderData.billing_state || 'MISSING',
+        billing_pincode: shiprocketOrderData.billing_pincode || 'MISSING',
+        shipping_address: shiprocketOrderData.shipping_address || 'MISSING',
+        shipping_city: shiprocketOrderData.shipping_city || 'MISSING',
+        shipping_state: shiprocketOrderData.shipping_state || 'MISSING',
+        shipping_pincode: shiprocketOrderData.shipping_pincode || 'MISSING'
+      });
+    }
+
+    // Try to create order in Shiprocket only if validation passes AND address is complete
+    if (validationErrors.length === 0 && hasCompleteAddress) {
+      try {
+        console.log('📤 Sending valid order to Shiprocket...');
+        const shiprocketResponse = await getShiprocket().createOrder(shiprocketOrderData);
+        console.log('✅ Shiprocket Order Created:', shiprocketResponse);
+        
+        // Update order with Shiprocket reference if available
+        if (shiprocketResponse.order_id) {
+          await pool.query(
+            "UPDATE orders SET is_shiprocket_generated=$1 WHERE id=$2",
+            [true, order.id]
+          );
+        }
+      } catch (shiprocketError) {
+        console.error('❌ SHIPROCKET API ERROR:', {
+          message: shiprocketError.message,
+          status: shiprocketError.response?.status,
+          shiprocketMessage: shiprocketError.response?.data?.message,
+          shiprocketDetails: shiprocketError.response?.data,
+          sentPayload: shiprocketOrderData
+        });
+        console.warn('⚠️  Order created locally, but Shiprocket sync failed:', shiprocketError.message);
+        // Continue without blocking - user's order is still created locally
       }
-    } catch (shiprocketError) {
-      console.warn('Shiprocket integration failed, but local order created:', shiprocketError.message);
-      // Continue without blocking - user's order is still created locally
+    } else {
+      if (validationErrors.length > 0) {
+        console.warn('⏭️  SKIPPING SHIPROCKET - Validation errors found');
+        console.warn('User will need to update their shipping information to enable Shiprocket tracking');
+      }
+      console.log('ℹ️  Order created locally. Shiprocket sync will be attempted when address is updated.');
     }
 
     // Log successful order creation
     console.log(`Order ${order.id} created by user ${req.user.id}`);
 
+    // Prepare response based on Shiprocket status
+    const shiprocketStatus = validationErrors.length === 0 && hasCompleteAddress ? 'synced' : 'local-only';
+    const responseMessage = shiprocketStatus === 'synced' 
+      ? "Order created successfully with Shiprocket tracking"
+      : "Order created. Shipping tracking will be available once address is confirmed.";
+
     res.status(201).json({ 
-      message: "Order created successfully", 
+      message: responseMessage,
+      shiprocketStatus: shiprocketStatus,
       order: {
         id: order.id,
         status: order.status,
@@ -173,53 +391,7 @@ router.get("/", authenticateToken, verifyAdmin, async (req, res) => {
   }
 });
 
-// Get order by ID (admin or order owner)
-router.get("/:id", authenticateToken, async (req, res) => {
-  const { id } = req.params;
-  
-  try {
-    // Get order
-    const orderResult = await pool.query(
-      `SELECT o.id, o.user_id, o.status, o.total_amount, o.created_at,
-              u.name as user_name, u.email as user_email
-       FROM orders o
-       JOIN users u ON o.user_id = u.id
-       WHERE o.id=$1`,
-      [id]
-    );
-
-    if (orderResult.rows.length === 0) {
-      return res.status(404).json({ error: "Order not found" });
-    }
-
-    const order = orderResult.rows[0];
-
-    // Check if user is admin or order owner
-    const isAdmin = (await pool.query("SELECT role FROM users WHERE id=$1", [req.user.id])).rows[0].role === "admin";
-    if (!isAdmin && order.user_id !== req.user.id) {
-      return res.status(403).json({ error: "Unauthorized" });
-    }
-
-    // Get order items
-    const itemsResult = await pool.query(
-      `SELECT oi.id, oi.product_id, oi.quantity, oi.price,
-              p.name, p.image
-       FROM order_items oi
-       JOIN products p ON oi.product_id = p.id
-       WHERE oi.order_id=$1`,
-      [id]
-    );
-
-    res.json({
-      ...order,
-      items: itemsResult.rows
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get user's orders (authenticated user)
+// Get user's orders (authenticated user) - MUST come before /:id route
 router.get("/user/my-orders", authenticateToken, async (req, res) => {
   try {
     // First, get all orders for this user
@@ -267,6 +439,56 @@ router.get("/user/my-orders", authenticateToken, async (req, res) => {
     );
 
     res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get order by ID (admin or order owner)
+router.get("/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    // Get order with all details including payment and shipping info
+    const orderResult = await pool.query(
+      `SELECT o.id, o.user_id, o.status, o.total_amount, o.created_at,
+              o.shipping_info, o.payment_status, o.payment_method, o.payment_date,
+              o.razorpay_order_id, o.razorpay_payment_id, o.razorpay_signature,
+              o.shiprocket_shipment_id, o.tracking_number, o.carrier_name,
+              o.estimated_delivery_date, o.shiprocket_status, o.tracking_url,
+              u.name as user_name, u.email as user_email
+       FROM orders o
+       JOIN users u ON o.user_id = u.id
+       WHERE o.id=$1`,
+      [id]
+    );
+
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const order = orderResult.rows[0];
+
+    // Check if user is admin or order owner
+    const isAdmin = (await pool.query("SELECT role FROM users WHERE id=$1", [req.user.id])).rows[0].role === "admin";
+    if (!isAdmin && order.user_id !== req.user.id) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    // Get order items
+    const itemsResult = await pool.query(
+      `SELECT oi.id, oi.product_id, oi.quantity, oi.price,
+              p.name, p.image
+       FROM order_items oi
+       JOIN products p ON oi.product_id = p.id
+       WHERE oi.order_id=$1`,
+      [id]
+    );
+
+    res.json({
+      ...order,
+      items: itemsResult.rows
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -386,7 +608,7 @@ router.post("/:id/shiprocket/create-shipment", authenticateToken, verifyAdmin, a
     };
 
     // Create shipment in Shiprocket
-    const shipmentResponse = await shiprocket.createShipment(shipmentData);
+    const shipmentResponse = await getShiprocket().createShipment(shipmentData);
     
     if (shipmentResponse.shipments && shipmentResponse.shipments.length > 0) {
       const shipmentId = shipmentResponse.shipments[0].shipment_id;

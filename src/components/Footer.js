@@ -20,7 +20,7 @@ function Footer() {
   return (
     <footer className="footer">
       {/* Newsletter Section */}
-      <div className="newsletter-section">
+      {/* <div className="newsletter-section">
         <div className="container">
           <div className="newsletter-content">
             <div className="newsletter-text">
@@ -40,7 +40,7 @@ function Footer() {
             </form>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Main Footer */}
       <div className="footer-main">
@@ -118,7 +118,7 @@ function Footer() {
       </div>
 
       {/* Information Bar */}
-      <div className="footer-info-bar">
+      {/* <div className="footer-info-bar">
         <div className="container">
           <div className="info-grid">
             <div className="info-item">
@@ -151,7 +151,7 @@ function Footer() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Bottom Footer */}
       <div className="footer-bottom">

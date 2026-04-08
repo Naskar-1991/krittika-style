@@ -123,6 +123,40 @@ const AdminLayout = ({ children }) => {
             🏷️ Categories
           </Link>
 
+          <Link to="/admin/logo" style={{
+            color: "white",
+            textDecoration: "none",
+            padding: "0.75rem 1rem",
+            borderRadius: "6px",
+            backgroundColor: "rgba(255,255,255,0.1)",
+            display: "block",
+            fontWeight: "500",
+            transition: "all 0.2s ease",
+            fontSize: "14px",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)"}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
+          >
+            🎨 Logo
+          </Link>
+
+          <Link to="/admin/reviews" style={{
+            color: "white",
+            textDecoration: "none",
+            padding: "0.75rem 1rem",
+            borderRadius: "6px",
+            backgroundColor: "rgba(255,255,255,0.1)",
+            display: "block",
+            fontWeight: "500",
+            transition: "all 0.2s ease",
+            fontSize: "14px",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)"}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
+          >
+            ⭐ Reviews
+          </Link>
+
           <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "1rem 0" }} />
 
           <Link to="/" style={{

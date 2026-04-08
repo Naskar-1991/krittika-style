@@ -1,17 +1,22 @@
 import React, { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
+import { ReturnsContext } from "../context/ReturnsContext";
 import { useNavigate, Link } from "react-router-dom";
+import ReturnRequestModal from "../components/ReturnRequestModal";
 import "./MyOrders.css";
 import API_URL from "../api_connection/BackendAPIConnection";
 
 function MyOrders() {
   const { user } = useContext(AuthContext);
+  const { checkCanReturn } = useContext(ReturnsContext);
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [expandedTracking, setExpandedTracking] = useState(null);
+  const [returnModal, setReturnModal] = useState(null);
+  const [returnCheckResults, setReturnCheckResults] = useState({});
 
   useEffect(() => {
     if (!user) {
@@ -36,6 +41,18 @@ function MyOrders() {
       }
 
       const data = await response.json();
+      
+      // Check return eligibility for each order
+      data.forEach(async (order) => {
+        const result = await checkCanReturn(order.id);
+        if (result) {
+          setReturnCheckResults(prev => ({
+            ...prev,
+            [order.id]: result,
+          }));
+        }
+      });
+
       setOrders(data);
       setLoading(false);
     } catch (err) {
@@ -340,6 +357,15 @@ function MyOrders() {
                         rel="noopener noreferrer"
                         className="btn-track"
                       >
+                    {order.status === "delivered" && returnCheckResults[order.id]?.can_return && (
+                      <button
+                        className="btn-return"
+                        onClick={() => setReturnModal(order)}
+                        title="Request a return"
+                      >
+                        🔄 Request Return
+                      </button>
+                    )}
                         📍 Track Shipment
                       </a>
                     )}
@@ -358,6 +384,20 @@ function MyOrders() {
           </div>
         )}
       </div>
+
+      {/* Return Request Modal */}
+      {returnModal && (
+        <ReturnRequestModal
+          order={returnModal}
+          items={returnModal.items || []}
+          onClose={() => setReturnModal(null)}
+          onSuccess={() => {
+            setReturnModal(null);
+            alert("Return request created successfully!");
+            navigate("/returns");
+          }}
+        />
+      )}
     </div>
   );
 }

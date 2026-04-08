@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Hero from "../components/Hero";
+import HomeBanner from "../components/HomeBanner";
 import ProductCard from "../components/ProductCard";
 import { fetchCategories } from "../services/categoryService";
 import "./Home.css";
@@ -53,8 +53,8 @@ function Home() {
 
   return (
     <div className="home-page">
-      {/* Hero Section */}
-      <Hero />
+      {/* Home Banner Section */}
+      <HomeBanner />
 
       {/* Featured Products Section */}
       <section className="featured-section">
@@ -137,7 +137,7 @@ function Home() {
         ))}
 
       {/* Testimonials Section */}
-      <section className="testimonials-section">
+      {/* <section className="testimonials-section">
         <div className="container">
           <h2 className="section-title">What Customers Say</h2>
           <div className="testimonials-grid">
@@ -184,10 +184,10 @@ function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Special Offer Section */}
-      <section className="special-offer-section">
+      {/* <section className="special-offer-section">
         <div className="container">
           <div className="offer-content">
             <h2>Special Offer This Month!</h2>
@@ -205,7 +205,7 @@ function Home() {
             <span className="offer-emoji">🎉</span>
           </div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 }

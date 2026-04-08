@@ -386,7 +386,8 @@
 
 /* Action Buttons */
 .btn-track,
-.btn-cancel {
+.btn-cancel,
+.btn-return {
   padding: 10px 18px;
   border-radius: 6px;
   border: none;
@@ -414,6 +415,16 @@
 
 .btn-cancel:hover {
   background: #fee2e2;
+}
+
+.btn-return {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.btn-return:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
 /* Tracking Section Styling */

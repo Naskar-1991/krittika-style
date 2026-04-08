@@ -1,6 +1,8 @@
 import React, { useContext } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
+import { WishlistProvider } from "./context/WishlistContext";
+import { ReturnsProvider } from "./context/ReturnsContext";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
 
 import Layout from "./components/Layout";
@@ -8,6 +10,8 @@ import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
 import Cart from "./components/Cart";
+import Wishlist from "./pages/Wishlist";
+import MyReturns from "./pages/MyReturns";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import Checkout from "./pages/Checkout";
@@ -19,8 +23,11 @@ import AdminLayout from "./admin/AdminLayout";
 import AdminDashboard from "./admin/AdminDashboard";
 import ManageProducts from "./admin/ManageProducts";
 import ManageCategories from "./admin/ManageCategories";
+import ManageLogo from "./admin/ManageLogo";
 import AdminUsers from "./admin/AdminUsers";
 import ManageOrders from "./admin/ManageOrders";
+import AdminReturns from "./admin/AdminReturns";
+import AdminReviews from "./admin/AdminReviews";
 
 function AppContent() {
   return (
@@ -58,6 +65,16 @@ function AppContent() {
           </Layout>
         }
       />
+      <Route
+        path="/wishlist"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Wishlist />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
 
       {/* Auth Routes without Layout */}
       <Route path="/signup" element={<Signup />} />
@@ -80,6 +97,16 @@ function AppContent() {
           <ProtectedRoute>
             <Layout>
               <MyOrders />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/returns"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <MyReturns />
             </Layout>
           </ProtectedRoute>
         }
@@ -146,6 +173,36 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/logo"
+        element={
+          <ProtectedRoute adminOnly={true}>
+            <AdminLayout>
+              <ManageLogo />
+            </AdminLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/returns"
+        element={
+          <ProtectedRoute adminOnly={true}>
+            <AdminLayout>
+              <AdminReturns />
+            </AdminLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/reviews"
+        element={
+          <ProtectedRoute adminOnly={true}>
+            <AdminLayout>
+              <AdminReviews />
+            </AdminLayout>
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
@@ -154,9 +211,13 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <WishlistProvider>
+          <ReturnsProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </ReturnsProvider>
+        </WishlistProvider>
       </CartProvider>
     </AuthProvider>
   );

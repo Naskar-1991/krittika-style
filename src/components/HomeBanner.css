@@ -1,0 +1,622 @@
+/* Home Banner Styles - Village Shopping Marketplace Theme */
+
+.home-banner-container {
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ===================== MAIN BANNER - VILLAGE THEME ===================== */
+
+.banner-wrapper {
+  position: relative;
+  width: 100%;
+  height: 550px;
+  overflow: hidden;
+  border-radius: 0;
+  box-shadow: 0 10px 40px rgba(93, 173, 226, 0.15);
+}
+
+.banner-slide {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  animation: slideIn 0.8s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Banner Overlay - Village theme with turquoise gradient */
+.banner-overlay-village {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(93, 173, 226, 0.5) 0%,
+    rgba(52, 152, 219, 0.4) 50%,
+    rgba(41, 128, 185, 0.3) 100%
+  );
+  z-index: 1;
+}
+
+/* Banner Content */
+.banner-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 2;
+  padding: 60px 80px;
+  gap: 40px;
+}
+
+.banner-text {
+  max-width: 550px;
+  color: white;
+  animation: fadeInLeft 1s ease-out;
+  flex: 1;
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Village Decorative Elements */
+.banner-village-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0.3;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.village-shop-1 {
+  position: absolute;
+  top: 20%;
+  right: 10%;
+  font-size: 120px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.village-shop-2 {
+  position: absolute;
+  bottom: 15%;
+  left: 5%;
+  font-size: 100px;
+  animation: float 4s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+.village-trees {
+  position: absolute;
+  top: 10%;
+  left: 15%;
+  font-size: 140px;
+  animation: sway 5s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes sway {
+  0%, 100% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(1deg);
+  }
+}
+
+/* Banner Emoji Icon - Village Theme */
+.banner-emoji-village {
+  font-size: 90px;
+  margin-bottom: 20px;
+  display: inline-block;
+  animation: bounce 2s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+/* Banner Title - Village Theme */
+.banner-title-village {
+  font-size: 56px;
+  font-weight: 800;
+  margin: 0 0 15px 0;
+  line-height: 1.2;
+  text-shadow: 2px 2px 12px rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  letter-spacing: -1px;
+}
+
+/* Banner Subtitle - Village Theme */
+.banner-subtitle-village {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  opacity: 0.98;
+  text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.3);
+  color: #E8F8F5;
+}
+
+/* Banner Description - Village Theme */
+.banner-description-village {
+  font-size: 16px;
+  line-height: 1.7;
+  margin: 0 0 35px 0;
+  opacity: 0.95;
+  max-width: 500px;
+  color: #ffffff;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Banner Buttons - Village Theme */
+.banner-buttons-village {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.btn-primary-village,
+.btn-secondary-village {
+  padding: 14px 32px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary-village {
+  background: linear-gradient(135deg, #5DADE2 0%, #3498DB 100%);
+  color: white;
+  box-shadow: 0 6px 20px rgba(93, 173, 226, 0.5);
+}
+
+.btn-primary-village:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(93, 173, 226, 0.7);
+  background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
+}
+
+.btn-secondary-village {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  border: 2.5px solid white;
+  backdrop-filter: blur(10px);
+}
+
+.btn-secondary-village:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateY(-4px);
+}
+
+/* Trust Badges - Village Theme */
+.trust-badges-village {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.trust-badge {
+  font-size: 14px;
+  font-weight: 600;
+  color: #E8F8F5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Village Shopping Illustration */
+.banner-illustration-village {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInRight 1s ease-out;
+}
+
+.shopping-person {
+  font-size: 120px;
+  margin-bottom: 20px;
+  animation: wave 2s ease-in-out infinite;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2));
+}
+
+.shopping-bags {
+  font-size: 60px;
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  animation: jiggle 2s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg) translateY(-10px);
+  }
+}
+
+@keyframes jiggle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.1);
+  }
+  50% {
+    transform: scale(1);
+  }
+  75% {
+    transform: scale(1.1);
+  }
+}
+
+.village-path {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 2px;
+}
+
+/* ===================== RESPONSIVE DESIGN - VILLAGE THEME ===================== */
+
+@media (max-width: 1200px) {
+  .banner-wrapper {
+    height: 500px;
+  }
+
+  .banner-content {
+    padding: 50px 60px;
+    gap: 30px;
+  }
+
+  .banner-title-village {
+    font-size: 48px;
+  }
+
+  .banner-subtitle-village {
+    font-size: 20px;
+  }
+
+  .village-shop-1 {
+    font-size: 80px;
+  }
+
+  .village-shop-2 {
+    font-size: 70px;
+  }
+
+  .village-trees {
+    font-size: 100px;
+  }
+
+  .shopping-person {
+    font-size: 100px;
+  }
+
+  .shopping-bags {
+    font-size: 50px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .banner-wrapper {
+    height: 450px;
+  }
+
+  .banner-content {
+    padding: 40px 50px;
+    gap: 25px;
+  }
+
+  .banner-title-village {
+    font-size: 42px;
+  }
+
+  .banner-subtitle-village {
+    font-size: 18px;
+  }
+
+  .banner-description-village {
+    font-size: 15px;
+  }
+
+  .banner-emoji-village {
+    font-size: 70px;
+  }
+
+  .trust-badges-village {
+    gap: 15px;
+  }
+
+  .trust-badge {
+    font-size: 13px;
+  }
+
+  .shopping-person {
+    font-size: 90px;
+  }
+
+  .shopping-bags {
+    font-size: 45px;
+  }
+}
+
+@media (max-width: 768px) {
+  .banner-wrapper {
+    height: 650px;
+  }
+
+  .banner-content {
+    flex-direction: column;
+    padding: 40px 30px;
+    justify-content: center;
+    gap: 30px;
+  }
+
+  .banner-text {
+    max-width: 100%;
+  }
+
+  .banner-title-village {
+    font-size: 36px;
+  }
+
+  .banner-subtitle-village {
+    font-size: 18px;
+  }
+
+  .banner-description-village {
+    font-size: 14px;
+    margin-bottom: 25px;
+  }
+
+  .banner-emoji-village {
+    font-size: 60px;
+  }
+
+  .btn-primary-village,
+  .btn-secondary-village {
+    padding: 12px 28px;
+    font-size: 14px;
+  }
+
+  .trust-badges-village {
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 15px;
+  }
+
+  .trust-badge {
+    font-size: 12px;
+  }
+
+  .banner-illustration-village {
+    order: -1;
+  }
+
+  .shopping-person {
+    font-size: 80px;
+  }
+
+  .shopping-bags {
+    font-size: 40px;
+  }
+
+  .village-path {
+    font-size: 20px;
+  }
+
+  .banner-village-decoration {
+    opacity: 0.2;
+  }
+
+  .village-shop-1 {
+    font-size: 60px;
+  }
+
+  .village-shop-2 {
+    font-size: 50px;
+  }
+
+  .village-trees {
+    font-size: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .banner-wrapper {
+    height: 700px;
+  }
+
+  .banner-content {
+    padding: 30px 20px;
+    gap: 25px;
+  }
+
+  .banner-text {
+    max-width: 100%;
+  }
+
+  .banner-title-village {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .banner-subtitle-village {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .banner-description-village {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+
+  .banner-emoji-village {
+    font-size: 50px;
+    margin-bottom: 15px;
+  }
+
+  .btn-primary-village,
+  .btn-secondary-village {
+    padding: 11px 24px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+
+  .banner-buttons-village {
+    gap: 12px;
+  }
+
+  .trust-badges-village {
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 10px;
+  }
+
+  .trust-badge {
+    font-size: 11px;
+  }
+
+  .shopping-person {
+    font-size: 70px;
+  }
+
+  .shopping-bags {
+    font-size: 35px;
+  }
+
+  .village-path {
+    font-size: 18px;
+  }
+
+  .banner-village-decoration {
+    opacity: 0.15;
+  }
+
+  .village-shop-1 {
+    font-size: 50px;
+    top: 10%;
+    right: 5%;
+  }
+
+  .village-shop-2 {
+    font-size: 40px;
+    bottom: 20%;
+    left: 2%;
+  }
+
+  .village-trees {
+    font-size: 65px;
+    top: 5%;
+    left: 10%;
+  }
+}
+
+@media (max-width: 480px) {
+  .banner-wrapper {
+    height: 250px;
+  }
+
+  .banner-content {
+    padding: 20px;
+  }
+
+  .banner-title {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+
+  .banner-subtitle {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .banner-description {
+    font-size: 12px;
+    margin-bottom: 15px;
+  }
+
+  .banner-emoji {
+    font-size: 48px;
+    margin-bottom: 10px;
+  }
+
+  .banner-buttons {
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+}

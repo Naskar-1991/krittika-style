@@ -1,19 +1,44 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { CartContext } from "../context/CartContext";
+import { WishlistContext } from "../context/WishlistContext";
+import API_URL from "../api_connection/BackendAPIConnection";
 import "./Header.css";
 
 function Header() {
   const { user, logout, isAdmin } = useContext(AuthContext);
   const { cart } = useContext(CartContext);
+  const { wishlist } = useContext(WishlistContext);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [logo, setLogo] = useState(null);
+  const [logoLoading, setLogoLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Fetch logo on component mount
+  useEffect(() => {
+    fetchLogo();
+  }, []);
+
+  const fetchLogo = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/logo`);
+      const data = await response.json();
+      if (data.logo_url) {
+        setLogo(data);
+      }
+    } catch (error) {
+      console.error("Error fetching logo:", error);
+    } finally {
+      setLogoLoading(false);
+    }
+  };
+
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const wishlistCount = wishlist.length;
 
   const handleLogout = () => {
     logout();
@@ -44,7 +69,7 @@ function Header() {
         <div className="container">
           <div className="top-bar-content">
             <div className="top-bar-left">
-              <span>📞 +1 (234) 567-8900</span>
+              <span>📞 +91 7586826861</span>
               <span>✉️ support@krittikastyle.com</span>
             </div>
             <div className="top-bar-right">
@@ -62,8 +87,19 @@ function Header() {
           <div className="nav-wrapper">
             {/* Logo */}
             <Link to="/" className="logo">
-              <span className="logo-icon">🛍️</span>
-              <span className="logo-text">KrittikaStyle</span>
+              {logo && logo.logo_url ? (
+                <img 
+                  src={`${API_URL}${logo.logo_url}`} 
+                  alt={logo.logo_alt_text || "Logo"}
+                  className="logo-image"
+                  title={logo.site_name}
+                />
+              ) : (
+                <>
+                  <span className="logo-icon">🛍️</span>
+                  <span className="logo-text">KrittikaStyle</span>
+                </>
+              )}
             </Link>
 
             {/* Search Bar */}
@@ -92,8 +128,16 @@ function Header() {
               )}
             </div>
 
-            {/* Right Side - Cart & User */}
+            {/* Right Side - Wishlist, Cart & User */}
             <div className="nav-right">
+              {/* Wishlist Icon */}
+              <Link to="/wishlist" className="wishlist-icon" title="Wishlist">
+                <span className="wishlist-emoji">❤️</span>
+                {wishlistCount > 0 && (
+                  <span className="wishlist-badge">{wishlistCount}</span>
+                )}
+              </Link>
+
               {/* Cart Icon */}
               <Link to="/cart" className="cart-icon">
                 <span className="cart-emoji">🛒</span>
@@ -121,6 +165,9 @@ function Header() {
                           <span className="admin-badge">Admin</span>
                         )}
                       </div>
+                      <Link to="/wishlist" onClick={() => setUserMenuOpen(false)}>
+                        ❤️ My Wishlist
+                      </Link>
                       <Link to="/orders" onClick={() => setUserMenuOpen(false)}>
                         📦 My Orders
                       </Link>
@@ -184,11 +231,25 @@ function Header() {
           {user ? (
             <>
               <Link
+                to="/wishlist"
+                onClick={() => handleNavClick("/wishlist")}
+                className="mobile-link"
+              >
+                ❤️ My Wishlist
+              </Link>
+              <Link
                 to="/orders"
                 onClick={() => handleNavClick("/orders")}
                 className="mobile-link"
               >
                 📦 My Orders
+              </Link>
+              <Link
+                to="/profile"
+                onClick={() => handleNavClick("/profile")}
+                className="mobile-link"
+              >
+                ⚙️ Profile Settings
               </Link>
               <button onClick={handleLogout} className="mobile-logout">
                 🚪 Logout ({user.email})
