@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import API_URL from "../api_connection/BackendAPIConnection";
+import TrackOrderModal from "../components/TrackOrderModal";
 
 const Checkout = () => {
   const { cart, clearCart } = useContext(CartContext);
@@ -14,6 +15,7 @@ const Checkout = () => {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [showTrackModal, setShowTrackModal] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: user?.name?.split(" ")[0] || "",
@@ -305,7 +307,7 @@ const Checkout = () => {
 
           <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
             <button
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/products")}
               style={{
                 padding: "12px 24px",
                 background: "transparent",
@@ -320,7 +322,7 @@ const Checkout = () => {
               Continue Shopping
             </button>
             <button
-              onClick={() => navigate("/admin/orders")}
+              onClick={() => setShowTrackModal(true)}
               style={{
                 padding: "12px 24px",
                 background: "var(--primary)",
@@ -332,10 +334,32 @@ const Checkout = () => {
                 fontWeight: "600"
               }}
             >
-              Track Order
+              📍 Track Order
+            </button>
+            <button
+              onClick={() => navigate("/orders")}
+              style={{
+                padding: "12px 24px",
+                background: "transparent",
+                color: "var(--text-secondary)",
+                border: "2px solid var(--border)",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "16px",
+                fontWeight: "600"
+              }}
+            >
+              My Orders
             </button>
           </div>
         </div>
+
+        {showTrackModal && orderId && (
+          <TrackOrderModal
+            order={{ id: orderId }}
+            onClose={() => setShowTrackModal(false)}
+          />
+        )}
       </div>
     );
   }

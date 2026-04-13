@@ -9,16 +9,33 @@ class ShiprocketClient {
     this.email = email;
     this.apiKey = apiKey;
     this.token = null;
-    this.tokenExpiry = null;
-    
-    // Create initial client with placeholder auth
-    // Will be updated after successful authentication
+    this._refreshing = false;
+
     this.client = axios.create({
       baseURL: SHIPROCKET_API_BASE,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' }
     });
+
+    // Auto-refresh token on 401 — Shiprocket tokens expire every 24 hours
+    this.client.interceptors.response.use(
+      response => response,
+      async error => {
+        const original = error.config;
+        if (error.response?.status === 401 && !original._isRetry) {
+          original._isRetry = true;
+          try {
+            console.log('🔄 Shiprocket token expired — refreshing...');
+            await this.authenticate(this.email, this.apiKey);
+            original.headers['Authorization'] = `Bearer ${this.token}`;
+            return this.client.request(original);
+          } catch (refreshErr) {
+            console.error('❌ Shiprocket token refresh failed:', refreshErr.message);
+            return Promise.reject(refreshErr);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
   }
 
   // Initialize authentication - MUST be called before making API requests
@@ -117,31 +134,31 @@ class ShiprocketClient {
         return cleaned;
       };
 
+      // Split full name into first/last for Shiprocket
+      const fullName = (orderData.billing_customer_name || '').trim();
+      const nameParts = fullName.split(' ');
+      const billingFirstName = nameParts[0] || fullName;
+      const billingLastName = nameParts.slice(1).join(' ') || ''; // Empty string is accepted
+
+      // Flatten multiline addresses (Shiprocket rejects \n in address fields)
+      const flatAddress = (addr) => (addr || '').replace(/\n/g, ', ').replace(/\s{2,}/g, ' ').trim();
+
       // Build payload for Shiprocket - matching their exact API spec
       payload = {
         order_id: orderData.order_id,
         order_date: orderData.order_date,
-        pickup_location: orderData.pickup_location_id || '50403', // Must be numeric or string ID
-        billing_customer_name: orderData.billing_customer_name,
+        pickup_location: orderData.pickup_location_name || process.env.SHIPROCKET_PICKUP_LOCATION || 'Primary', // Must be warehouse NAME (not numeric ID)
+        billing_customer_name: billingFirstName,
+        billing_last_name: billingLastName,
         billing_email: orderData.billing_email,
         billing_phone: ensurePhoneWithCountryCode(orderData.billing_phone),
-        billing_address: orderData.billing_address,
-        billing_address_type: 'home', // Required by Shiprocket
+        billing_address: flatAddress(orderData.billing_address),
         billing_city: orderData.billing_city,
         billing_state: orderData.billing_state,
         billing_country: orderData.billing_country || 'India',
         billing_pincode: orderData.billing_pincode,
-        // Shipping info - MUST be present and valid
-        shipping_is_default: true,
-        shipping_customer_name: orderData.shipping_customer_name,
-        shipping_email: orderData.shipping_email,
-        shipping_phone: ensurePhoneWithCountryCode(orderData.shipping_phone),
-        shipping_address: orderData.shipping_address,
-        shipping_address_type: 'home', // Required by Shiprocket
-        shipping_city: orderData.shipping_city,
-        shipping_state: orderData.shipping_state,
-        shipping_country: orderData.shipping_country || 'India',
-        shipping_pincode: orderData.shipping_pincode,
+        // Use billing address as shipping address
+        shipping_is_billing: 1,
         // Order items and other details
         order_items: orderData.order_items,
         payment_method: 'Prepaid',
@@ -155,8 +172,7 @@ class ShiprocketClient {
       // Final validation before sending
       console.log('\n✅ Final Payload Validation:');
       const addressFields = [
-        'billing_customer_name', 'billing_address', 'billing_city', 'billing_state', 'billing_pincode',
-        'shipping_customer_name', 'shipping_address', 'shipping_city', 'shipping_state', 'shipping_pincode'
+        'billing_customer_name', 'billing_address', 'billing_city', 'billing_state', 'billing_pincode'
       ];
       
       const fieldStatus = addressFields.map(field => ({
@@ -212,6 +228,17 @@ class ShiprocketClient {
       
       console.error('\n📤 ACTUAL PAYLOAD SENT TO SHIPROCKET API:');
       console.error(JSON.stringify(payload, null, 2));
+      throw error;
+    }
+  }
+
+  // List all pickup locations (warehouses) — use this to find the exact pickup_location name
+  async listPickupLocations() {
+    try {
+      const response = await this.client.get('/settings/company/pickup');
+      return response.data;
+    } catch (error) {
+      console.error('Shiprocket List Pickup Locations Error:', error.response?.data || error.message);
       throw error;
     }
   }
@@ -275,15 +302,61 @@ class ShiprocketClient {
     }
   }
 
-  // Cancel shipment
-  async cancelShipment(shipmentId) {
-    try {
-      const response = await this.client.post(`/shipments/${shipmentId}/cancel`);
-      return response.data;
-    } catch (error) {
-      console.error('Shiprocket Cancel Shipment Error:', error.response?.data || error.message);
-      throw error;
+  // Look up a Shiprocket order by our channel order ID (e.g. "ORDER-42")
+  // Returns the Shiprocket order object (with .id = Shiprocket internal order ID), or null
+  async getOrderByChannelId(channelOrderId) {
+    console.log(`🔍 Looking up Shiprocket order by channel_order_id: ${channelOrderId}`);
+    const response = await this.client.get('/orders', {
+      params: { per_page: 10, q: channelOrderId }
+    });
+    const orders = response.data?.data || [];
+    const match = orders.find(o => o.channel_order_id === channelOrderId);
+    if (match) {
+      console.log(`✅ Found Shiprocket order: internal_id=${match.id}, status=${match.status}`);
+    } else {
+      console.warn(`⚠️  No Shiprocket order found for channel_order_id=${channelOrderId}`);
     }
+    return match || null;
+  }
+
+  // Fetch the current status of a Shiprocket order by its internal ID
+  async getOrderStatus(shiprocketOrderId) {
+    console.log(`🔍 Fetching Shiprocket order status for id=${shiprocketOrderId}`);
+    const response = await this.client.get(`/orders/show/${shiprocketOrderId}`);
+    return response.data;
+  }
+
+  // Cancel by Shiprocket internal order ID(s)
+  // Endpoint: POST /orders/cancel  { ids: [shiprocket_order_id] }
+  async cancelOrder(shiprocketOrderId) {
+    const ids = Array.isArray(shiprocketOrderId) ? shiprocketOrderId : [shiprocketOrderId];
+    console.log('📤 Shiprocket cancelOrder payload:', { ids });
+    const response = await this.client.post('/orders/cancel', { ids });
+    console.log('📥 Shiprocket cancelOrder response:', response.data);
+    return response.data;
+  }
+
+  // Cancel by AWB / tracking number
+  // Endpoint: POST /orders/cancel  { awbs: ["AWB_NUMBER"] }
+  async cancelShipmentByAWB(awb) {
+    const awbs = Array.isArray(awb) ? awb : [awb];
+    console.log('📤 Shiprocket cancelShipmentByAWB payload:', { awbs });
+    const response = await this.client.post('/orders/cancel', { awbs });
+    console.log('📥 Shiprocket cancelShipmentByAWB response:', response.data);
+    return response.data;
+  }
+
+  // Legacy — kept for admin cancel-shipment route compatibility
+  // shipmentId here is actually the Shiprocket shipment_id (not order_id),
+  // so we cancel by AWB if available, otherwise log a warning.
+  async cancelShipment(shipmentId) {
+    console.log('📤 Shiprocket cancelShipment (shipment_id):', shipmentId);
+    // Shiprocket has no /shipments/:id/cancel endpoint.
+    // The /orders/cancel endpoint expects order IDs, not shipment IDs.
+    // Log clearly so admins know this needs the order ID.
+    throw new Error(
+      `cancelShipment called with shipment_id ${shipmentId} — use cancelOrder(shiprocket_order_id) or cancelShipmentByAWB(awb) instead`
+    );
   }
 
   // Get available couriers

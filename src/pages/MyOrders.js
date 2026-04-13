@@ -3,6 +3,7 @@ import { AuthContext } from "../context/AuthContext";
 import { ReturnsContext } from "../context/ReturnsContext";
 import { useNavigate, Link } from "react-router-dom";
 import ReturnRequestModal from "../components/ReturnRequestModal";
+import TrackOrderModal from "../components/TrackOrderModal";
 import "./MyOrders.css";
 import API_URL from "../api_connection/BackendAPIConnection";
 
@@ -17,6 +18,10 @@ function MyOrders() {
   const [expandedTracking, setExpandedTracking] = useState(null);
   const [returnModal, setReturnModal] = useState(null);
   const [returnCheckResults, setReturnCheckResults] = useState({});
+  const [trackModal, setTrackModal] = useState(null);
+  const [cancelModal, setCancelModal] = useState(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -59,6 +64,46 @@ function MyOrders() {
       setError(err.message);
       setLoading(false);
       console.error("Error fetching orders:", err);
+    }
+  };
+
+  const cancelOrder = async (orderId) => {
+    setCancelLoading(true);
+    setCancelError("");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/api/orders/${orderId}/cancel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error(`Server error (${res.status}). Please restart the backend and try again.`);
+      }
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to cancel order");
+
+      // Update order in-place
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: "cancelled" } : o))
+      );
+
+      // Close modal — but if Shiprocket sync failed, show a warning first
+      if (data.shiprocketError) {
+        setCancelError(
+          `Order cancelled locally, but Shiprocket sync failed: ${data.shiprocketError}. ` +
+          `Please cancel it manually in your Shiprocket dashboard.`
+        );
+        // Leave modal open so user sees the warning, but order is already cancelled
+      } else {
+        setCancelModal(null);
+      }
+    } catch (err) {
+      setCancelError(err.message);
+    } finally {
+      setCancelLoading(false);
     }
   };
 
@@ -350,13 +395,6 @@ function MyOrders() {
                     <span className="amount">₹{parseFloat(order.total_amount).toFixed(2)}</span>
                   </div>
                   <div className="order-actions">
-                    {order.tracking_number && (
-                      <a 
-                        href={`https://www.shiprocket.in/tracking/${order.tracking_number}/`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="btn-track"
-                      >
                     {order.status === "delivered" && returnCheckResults[order.id]?.can_return && (
                       <button
                         className="btn-return"
@@ -366,16 +404,24 @@ function MyOrders() {
                         🔄 Request Return
                       </button>
                     )}
-                        📍 Track Shipment
-                      </a>
-                    )}
-                    {order.status !== "cancelled" && !order.tracking_number && (
-                      <button className="btn-track" disabled title="Tracking not available yet">
-                        📍 Track Order
+                    {order.status !== "cancelled" && (
+                      <button
+                        className="btn-track"
+                        onClick={() => setTrackModal(order)}
+                        title="Track your order"
+                      >
+                        📍 {order.tracking_number ? "Track Shipment" : "Track Order"}
                       </button>
                     )}
                     {order.status !== "cancelled" && order.status !== "delivered" && (
-                      <button className="btn-cancel">Cancel Order</button>
+                      <button
+                        className="btn-cancel"
+                        onClick={() => { setCancelError(""); setCancelModal(order); }}
+                        disabled={order.status === "shipped"}
+                        title={order.status === "shipped" ? "Order already shipped — cannot cancel" : "Cancel this order"}
+                      >
+                        ✕ Cancel Order
+                      </button>
                     )}
                   </div>
                 </div>
@@ -397,6 +443,61 @@ function MyOrders() {
             navigate("/returns");
           }}
         />
+      )}
+
+      {/* Track Order Modal */}
+      {trackModal && (
+        <TrackOrderModal
+          order={trackModal}
+          onClose={() => setTrackModal(null)}
+        />
+      )}
+
+      {/* Cancel Order Confirmation Modal */}
+      {cancelModal && (
+        <div
+          className="cancel-modal-overlay"
+          onClick={(e) => { if (e.target === e.currentTarget && !cancelLoading) { setCancelModal(null); setCancelError(""); } }}
+        >
+          <div className="cancel-modal">
+            <div className="cancel-modal-header">
+              <h2>Cancel Order</h2>
+            </div>
+            <div className="cancel-modal-body">
+              <div className="cancel-warning-icon">⚠️</div>
+              <p className="cancel-confirm-text">
+                Are you sure you want to cancel <strong>Order #{cancelModal.id}</strong>?
+              </p>
+              <p className="cancel-sub-text">
+                Total: <strong>₹{parseFloat(cancelModal.total_amount).toFixed(2)}</strong>
+              </p>
+              <p className="cancel-note">
+                This action cannot be undone. If your order has already been dispatched, it cannot be cancelled.
+              </p>
+              {cancelError && (
+                <div className={cancelError.includes("locally") ? "cancel-warning" : "cancel-error"}>
+                  {cancelError.includes("locally") ? "⚠️" : "❌"} {cancelError}
+                </div>
+              )}
+            </div>
+            <div className="cancel-modal-footer">
+              <button
+                className="cancel-modal-btn-back"
+                onClick={() => { setCancelModal(null); setCancelError(""); }}
+                disabled={cancelLoading}
+              >
+                {cancelError.includes("locally") ? "Close" : "Go Back"}
+              </button>
+              <button
+                className="cancel-modal-btn-confirm"
+                onClick={() => cancelOrder(cancelModal.id)}
+                disabled={cancelLoading || cancelError.includes("locally")}
+              >
+                {cancelLoading ? "Cancelling..." : "Yes, Cancel Order"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -782,3 +782,155 @@
     font-size: 1.3rem;
   }
 }
+
+/* ── Disabled cancel button (shipped orders) ── */
+.btn-cancel:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: auto; /* keep tooltip visible */
+}
+
+.btn-cancel:disabled:hover {
+  background: white;
+  transform: none;
+}
+
+/* ── Cancel Order Confirmation Modal ── */
+.cancel-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  animation: cancelFadeIn 0.2s ease;
+}
+
+@keyframes cancelFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.cancel-modal {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+  width: 90%;
+  max-width: 420px;
+  animation: cancelSlideUp 0.25s ease;
+  overflow: hidden;
+}
+
+@keyframes cancelSlideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.cancel-modal-header {
+  padding: 20px 24px 0;
+}
+
+.cancel-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #dc2626;
+}
+
+.cancel-modal-body {
+  padding: 20px 24px;
+  text-align: center;
+}
+
+.cancel-warning-icon {
+  font-size: 2.8rem;
+  margin-bottom: 12px;
+}
+
+.cancel-confirm-text {
+  font-size: 1rem;
+  color: #1a1a1a;
+  margin: 0 0 6px;
+}
+
+.cancel-sub-text {
+  font-size: 0.95rem;
+  color: #555;
+  margin: 0 0 12px;
+}
+
+.cancel-note {
+  font-size: 0.82rem;
+  color: #888;
+  background: #fef9c3;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 0;
+  text-align: left;
+}
+
+.cancel-error {
+  margin-top: 12px;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  text-align: left;
+}
+
+.cancel-warning {
+  margin-top: 12px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  text-align: left;
+  line-height: 1.5;
+}
+
+.cancel-modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 0 24px 24px;
+}
+
+.cancel-modal-btn-back,
+.cancel-modal-btn-confirm {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-modal-btn-back {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.cancel-modal-btn-back:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.cancel-modal-btn-confirm {
+  background: #dc2626;
+  color: #fff;
+}
+
+.cancel-modal-btn-confirm:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.cancel-modal-btn-back:disabled,
+.cancel-modal-btn-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

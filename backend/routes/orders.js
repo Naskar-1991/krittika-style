@@ -148,8 +148,7 @@ router.post("/", authenticateToken, async (req, res) => {
 
     // Validate address - ensure non-empty
     const cleanAddress = (addressStr) => {
-      const cleaned = (addressStr || "").trim();
-      return cleaned.length >= 5 ? cleaned : ""; // Minimum 5 characters
+      return (addressStr || "").trim();
     };
 
     // Map full state names to state codes (Shiprocket requires state codes)
@@ -250,7 +249,7 @@ router.post("/", authenticateToken, async (req, res) => {
     const shiprocketOrderData = {
       order_id: `ORDER-${order.id}`,
       order_date: new Date().toISOString().split('T')[0],
-      pickup_location_id: process.env.SHIPROCKET_WAREHOUSE_ID || '50403',
+      pickup_location_name: process.env.SHIPROCKET_PICKUP_LOCATION || 'Primary',
       billing_customer_name: customerName || '',
       billing_email: user.email || shippingInfo.email || "default@example.com",
       billing_phone: billingPhone || '',
@@ -259,15 +258,6 @@ router.post("/", authenticateToken, async (req, res) => {
       billing_state: billingState || '',
       billing_country: (shippingInfo.country || "India").trim() || 'India',
       billing_pincode: billingPincode || '',
-      shipping_is_default: true,
-      shipping_customer_name: customerName || '',
-      shipping_email: user.email || shippingInfo.email || "default@example.com",
-      shipping_phone: billingPhone || '',
-      shipping_address: billingAddress || '',
-      shipping_city: billingCity || '',
-      shipping_state: billingState || '',
-      shipping_country: (shippingInfo.country || "India").trim() || 'India',
-      shipping_pincode: billingPincode || '',
       order_items: orderItems || [],
       sub_total: parseFloat(totalAmount || 0),
       length: 10,
@@ -293,15 +283,11 @@ router.post("/", authenticateToken, async (req, res) => {
     }, null, 2));
 
     // Additional check: Ensure address fields are NOT empty before sending to Shiprocket
-    const hasCompleteAddress = 
+    const hasCompleteAddress =
       shiprocketOrderData.billing_address && shiprocketOrderData.billing_address.trim() !== '' &&
       shiprocketOrderData.billing_city && shiprocketOrderData.billing_city.trim() !== '' &&
       shiprocketOrderData.billing_state && shiprocketOrderData.billing_state.trim() !== '' &&
-      shiprocketOrderData.billing_pincode && shiprocketOrderData.billing_pincode.trim() !== '' &&
-      shiprocketOrderData.shipping_address && shiprocketOrderData.shipping_address.trim() !== '' &&
-      shiprocketOrderData.shipping_city && shiprocketOrderData.shipping_city.trim() !== '' &&
-      shiprocketOrderData.shipping_state && shiprocketOrderData.shipping_state.trim() !== '' &&
-      shiprocketOrderData.shipping_pincode && shiprocketOrderData.shipping_pincode.trim() !== '';
+      shiprocketOrderData.billing_pincode && shiprocketOrderData.billing_pincode.trim() !== '';
 
     if (!hasCompleteAddress) {
       console.warn('⏭️  SKIPPING SHIPROCKET - Incomplete address information');
@@ -324,12 +310,13 @@ router.post("/", authenticateToken, async (req, res) => {
         const shiprocketResponse = await getShiprocket().createOrder(shiprocketOrderData);
         console.log('✅ Shiprocket Order Created:', shiprocketResponse);
         
-        // Update order with Shiprocket reference if available
+        // Save Shiprocket order ID so we can cancel it later
         if (shiprocketResponse.order_id) {
           await pool.query(
-            "UPDATE orders SET is_shiprocket_generated=$1 WHERE id=$2",
-            [true, order.id]
+            "UPDATE orders SET is_shiprocket_generated=$1, shiprocket_order_id=$2 WHERE id=$3",
+            [true, shiprocketResponse.order_id, order.id]
           );
+          console.log(`✅ Shiprocket order_id ${shiprocketResponse.order_id} saved for local order ${order.id}`);
         }
       } catch (shiprocketError) {
         console.error('❌ SHIPROCKET API ERROR:', {
@@ -652,12 +639,12 @@ router.get("/:id/tracking", authenticateToken, async (req, res) => {
 
     const order = orderResult.rows[0];
     const isAdmin = (await pool.query("SELECT role FROM users WHERE id=$1", [req.user.id])).rows[0].role === "admin";
-    
+
     if (!isAdmin && order.user_id !== req.user.id) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
-    // Return tracking info from database
+    // Base tracking info from DB
     const trackingInfo = {
       tracking_number: order.tracking_number,
       carrier_name: order.carrier_name,
@@ -667,22 +654,70 @@ router.get("/:id/tracking", authenticateToken, async (req, res) => {
       tracking_url: order.tracking_url
     };
 
-    // Get tracking history
+    // Get stored tracking history
     const historyResult = await pool.query(
-      `SELECT status, location, timestamp, additional_info 
-       FROM tracking_history 
-       WHERE order_id=$1 
+      `SELECT status, location, timestamp, additional_info
+       FROM tracking_history
+       WHERE order_id=$1
        ORDER BY timestamp DESC`,
       [id]
     );
+
+    let liveTracking = null;
+
+    // Fetch live tracking data from Shiprocket if tracking number is available
+    if (order.tracking_number) {
+      try {
+        const shiprocket = getShiprocket();
+        const trackingData = await shiprocket.getTrackingDetails(order.tracking_number);
+
+        if (trackingData && trackingData.tracking_data) {
+          const td = trackingData.tracking_data;
+          const shipmentTrack = td.shipment_track && td.shipment_track.length > 0
+            ? td.shipment_track[0]
+            : null;
+          const activities = td.shipment_track_activities || [];
+
+          liveTracking = {
+            current_status: shipmentTrack?.current_status || null,
+            delivered_to: shipmentTrack?.delivered_to || null,
+            destination: shipmentTrack?.destination || null,
+            origin: shipmentTrack?.origin || null,
+            courier_name: shipmentTrack?.courier_company_id || null,
+            edd: shipmentTrack?.edd || null,
+            activities: activities.map(a => ({
+              date: a.date,
+              status: a.status,
+              activity: a.activity,
+              location: a.location
+            }))
+          };
+
+          // Persist updated status back to DB if it changed
+          if (shipmentTrack?.current_status && shipmentTrack.current_status !== order.shiprocket_status) {
+            await pool.query(
+              `UPDATE orders SET shiprocket_status=$1 WHERE id=$2`,
+              [shipmentTrack.current_status, id]
+            );
+            trackingInfo.shiprocket_status = shipmentTrack.current_status;
+          }
+        }
+      } catch (shiprocketErr) {
+        // Non-fatal — fall back to DB data
+        console.warn("Live Shiprocket tracking fetch failed:", shiprocketErr.message);
+      }
+    }
 
     res.json({
       order: {
         id: order.id,
         status: order.status,
+        created_at: order.created_at,
+        shipping_info: order.shipping_info,
         ...trackingInfo
       },
-      history: historyResult.rows
+      history: historyResult.rows,
+      liveTracking
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -706,7 +741,7 @@ router.post("/:id/sync-tracking", authenticateToken, verifyAdmin, async (req, re
     }
 
     // Get tracking details from Shiprocket
-    const trackingData = await shiprocket.getTrackingDetails(order.tracking_number);
+    const trackingData = await getShiprocket().getTrackingDetails(order.tracking_number);
 
     if (trackingData.tracking_data && trackingData.tracking_data.shipment_track) {
       const track = trackingData.tracking_data.shipment_track;
@@ -779,7 +814,7 @@ router.post("/:id/available-couriers", authenticateToken, verifyAdmin, async (re
     }
 
     // Check service availability
-    const serviceability = await shiprocket.verifyServiceability(
+    const serviceability = await getShiprocket().verifyServiceability(
       process.env.SHIPROCKET_WAREHOUSE_PINCODE || '110001',
       shippingInfo.zipcode,
       totalWeight
@@ -812,7 +847,7 @@ router.post("/:id/generate-label", authenticateToken, verifyAdmin, async (req, r
     }
 
     // Generate label
-    const labelResponse = await shiprocket.generateLabel([order.shiprocket_shipment_id]);
+    const labelResponse = await getShiprocket().generateLabel([order.shiprocket_shipment_id]);
 
     res.json({
       message: "Label generated",
@@ -825,34 +860,187 @@ router.post("/:id/generate-label", authenticateToken, verifyAdmin, async (req, r
   }
 });
 
-// Cancel Shiprocket shipment
-router.post("/:id/cancel-shipment", authenticateToken, verifyAdmin, async (req, res) => {
+// Cancel order (order owner — only pending/processing)
+router.post("/:id/cancel", authenticateToken, async (req, res) => {
   const { id } = req.params;
 
   try {
-    const orderResult = await pool.query("SELECT * FROM orders WHERE id=$1", [id]);
+    const orderResult = await pool.query(
+      `SELECT id, user_id, status, total_amount,
+              shiprocket_order_id, shiprocket_shipment_id, tracking_number
+       FROM orders WHERE id=$1`,
+      [id]
+    );
     if (orderResult.rows.length === 0) {
       return res.status(404).json({ error: "Order not found" });
     }
 
     const order = orderResult.rows[0];
 
-    if (!order.shiprocket_shipment_id) {
-      return res.status(400).json({ error: "Shipment not created yet" });
+    if (parseInt(order.user_id) !== parseInt(req.user.id)) {
+      return res.status(403).json({ error: "Unauthorized" });
     }
 
-    // Cancel shipment
-    const cancelResponse = await shiprocket.cancelShipment(order.shiprocket_shipment_id);
+    if (!["pending", "processing"].includes(order.status)) {
+      return res.status(400).json({
+        error: `Cannot cancel this order. Orders with status "${order.status}" cannot be cancelled.`
+      });
+    }
 
-    // Update order status
+    const shiprocket = getShiprocket();
+    let shiprocketOrderId = order.shiprocket_order_id
+      ? parseInt(order.shiprocket_order_id)
+      : null;
+
+    // ── Step 1: if we don't have the Shiprocket order ID yet, look it up ──
+    if (!shiprocketOrderId) {
+      try {
+        const channelOrderId = `ORDER-${id}`;
+        const srOrder = await shiprocket.getOrderByChannelId(channelOrderId);
+        if (srOrder && srOrder.id) {
+          shiprocketOrderId = srOrder.id;
+          // Persist so future calls skip this lookup
+          await pool.query(
+            "UPDATE orders SET shiprocket_order_id=$1 WHERE id=$2",
+            [shiprocketOrderId, id]
+          );
+          console.log(`✅ Resolved & saved shiprocket_order_id=${shiprocketOrderId} for local order ${id}`);
+        }
+      } catch (lookupErr) {
+        console.warn(`⚠️  Could not look up Shiprocket order for local order ${id}:`, lookupErr.message);
+      }
+    }
+
+    // ── Step 2: cancel in Shiprocket ──
+    let shiprocketCancelled = false;
+    let shiprocketError = null;
+
+    if (shiprocketOrderId) {
+      try {
+        const cancelResult = await shiprocket.cancelOrder(shiprocketOrderId);
+        console.log(`✅ Shiprocket order ${shiprocketOrderId} cancelled:`, cancelResult);
+        shiprocketCancelled = true;
+      } catch (err) {
+        shiprocketError = err.response?.data?.message || err.message;
+        console.error(`❌ Shiprocket cancelOrder failed (id=${shiprocketOrderId}):`, shiprocketError);
+      }
+    } else if (order.tracking_number) {
+      // Fallback: cancel by AWB if order was already assigned one
+      try {
+        const cancelResult = await shiprocket.cancelShipmentByAWB(order.tracking_number);
+        console.log(`✅ Shiprocket AWB ${order.tracking_number} cancelled:`, cancelResult);
+        shiprocketCancelled = true;
+      } catch (err) {
+        shiprocketError = err.response?.data?.message || err.message;
+        console.error(`❌ Shiprocket AWB cancel failed (${order.tracking_number}):`, shiprocketError);
+      }
+    } else {
+      console.log(`ℹ️  Order ${id} not found in Shiprocket — local cancel only`);
+    }
+
+    // ── Step 3: verify cancellation status from Shiprocket ──
+    let verifiedShiprocketStatus = null;
+    if (shiprocketCancelled && shiprocketOrderId) {
+      try {
+        const statusData = await shiprocket.getOrderStatus(shiprocketOrderId);
+        verifiedShiprocketStatus = statusData?.status || statusData?.data?.status || null;
+        console.log(`📋 Shiprocket order ${shiprocketOrderId} verified status: ${verifiedShiprocketStatus}`);
+      } catch (verifyErr) {
+        console.warn(`⚠️  Could not verify Shiprocket status:`, verifyErr.message);
+      }
+    }
+
+    // ── Step 4: update local DB ──
+    const dbResult = await pool.query(
+      `UPDATE orders
+       SET status          = 'cancelled',
+           shiprocket_status = CASE
+             WHEN $2 IS NOT NULL THEN $2
+             WHEN $3 = true      THEN 'CANCELED'
+             ELSE shiprocket_status
+           END
+       WHERE id = $1
+       RETURNING id, status, total_amount, created_at`,
+      [id, verifiedShiprocketStatus, shiprocketCancelled]
+    );
+
+    console.log(`Order ${id} cancelled by user ${req.user.id}. Shiprocket cancelled: ${shiprocketCancelled}`);
+    res.json({
+      message: "Order cancelled successfully",
+      shiprocketCancelled,
+      shiprocketStatus: verifiedShiprocketStatus,
+      shiprocketError: shiprocketCancelled ? null : (shiprocketOrderId || order.tracking_number ? shiprocketError : null),
+      order: dbResult.rows[0]
+    });
+  } catch (err) {
+    console.error("Order cancel error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Cancel Shiprocket shipment (admin)
+router.post("/:id/cancel-shipment", authenticateToken, verifyAdmin, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const orderResult = await pool.query(
+      "SELECT id, status, shiprocket_order_id, shiprocket_shipment_id, tracking_number FROM orders WHERE id=$1",
+      [id]
+    );
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const order = orderResult.rows[0];
+    const shiprocket = getShiprocket();
+
+    let shiprocketOrderId = order.shiprocket_order_id ? parseInt(order.shiprocket_order_id) : null;
+
+    // Look up Shiprocket order ID if not stored
+    if (!shiprocketOrderId) {
+      try {
+        const srOrder = await shiprocket.getOrderByChannelId(`ORDER-${id}`);
+        if (srOrder?.id) {
+          shiprocketOrderId = srOrder.id;
+          await pool.query("UPDATE orders SET shiprocket_order_id=$1 WHERE id=$2", [shiprocketOrderId, id]);
+        }
+      } catch (lookupErr) {
+        console.warn(`⚠️  Could not look up Shiprocket order for local order ${id}:`, lookupErr.message);
+      }
+    }
+
+    let shiprocketCancelled = false;
+    let shiprocketError = null;
+
+    if (shiprocketOrderId) {
+      try {
+        const cancelResponse = await shiprocket.cancelOrder(shiprocketOrderId);
+        console.log(`✅ Shiprocket order ${shiprocketOrderId} cancelled:`, cancelResponse);
+        shiprocketCancelled = true;
+      } catch (err) {
+        shiprocketError = err.response?.data?.message || err.message;
+        console.error(`❌ Shiprocket cancelOrder failed (id=${shiprocketOrderId}):`, shiprocketError);
+      }
+    } else if (order.tracking_number) {
+      try {
+        const cancelResponse = await shiprocket.cancelShipmentByAWB(order.tracking_number);
+        console.log(`✅ Shiprocket AWB ${order.tracking_number} cancelled:`, cancelResponse);
+        shiprocketCancelled = true;
+      } catch (err) {
+        shiprocketError = err.response?.data?.message || err.message;
+        console.error(`❌ Shiprocket AWB cancel failed:`, shiprocketError);
+      }
+    }
+
     await pool.query(
-      "UPDATE orders SET status=$1, shiprocket_status=$2 WHERE id=$3",
-      ['cancelled', 'cancelled', id]
+      "UPDATE orders SET status='cancelled', shiprocket_status=CASE WHEN $2 = true THEN 'CANCELED' ELSE shiprocket_status END WHERE id=$1",
+      [id, shiprocketCancelled]
     );
 
     res.json({
-      message: "Shipment cancelled",
-      response: cancelResponse
+      message: shiprocketCancelled ? "Shipment cancelled in Shiprocket and locally" : "Order cancelled locally (Shiprocket sync failed)",
+      shiprocketCancelled,
+      shiprocketError: shiprocketCancelled ? null : shiprocketError
     });
   } catch (err) {
     console.error("Cancel shipment error:", err);

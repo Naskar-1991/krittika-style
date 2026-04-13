@@ -18,13 +18,11 @@ const dotenv = require('dotenv')
 dotenv.config();
 const app = express();
 app.use(cors({
-  origin: 'https://dev.krittikastyle.com', methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true, allowedHeaders: ['Content-Type', 'Authorization']
+  origin: ['https://dev.krittikastyle.com', 'https://api.krittikastyle.com', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-// app.use(cors({
-//   origin: 'http://localhost:3000', methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//   credentials: true, allowedHeaders: ['Content-Type', 'Authorization']
-// }));
 
 
 // allow JSON payloads and urlencoded for form submissions
@@ -53,6 +51,19 @@ app.use("/api/admin/returns", adminReturnsRoute);
 app.use("/api/logo", logoRoute);
 app.use("/api/reviews", reviewsRoute);
 
+// ==================== AUTO MIGRATIONS ====================
+const pool = require("./db");
+const runMigrations = async () => {
+  try {
+    await pool.query(`
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS shiprocket_order_id BIGINT
+    `);
+    console.log("✅ Migrations applied (shiprocket_order_id column ready)");
+  } catch (err) {
+    console.error("⚠️  Migration error:", err.message);
+  }
+};
+
 // ==================== SHIPROCKET INITIALIZATION ====================
 const ShiprocketClient = require("./shiprocketService");
 global.shiprocket = new ShiprocketClient();
@@ -62,7 +73,22 @@ const initializeShiprocket = async () => {
   try {
     console.log('\n🚀 Initializing Shiprocket Integration...');
     await global.shiprocket.initialize();
-    console.log('✅ Shiprocket is ready!\n');
+    console.log('✅ Shiprocket is ready!');
+
+    // Print all pickup location names so we can verify SHIPROCKET_PICKUP_LOCATION
+    try {
+      const pickupData = await global.shiprocket.listPickupLocations();
+      const locations = pickupData?.data?.shipping_address || [];
+      console.log('\n📦 Available Shiprocket Pickup Locations:');
+      if (locations.length === 0) {
+        console.warn('  ⚠️  No pickup locations found! Add a warehouse in Shiprocket dashboard.');
+      } else {
+        locations.forEach(loc => console.log(`  ✅ Name: "${loc.pickup_location}" | ID: ${loc.id} | Pincode: ${loc.pin_code}`));
+        console.log(`\n  👉 Set SHIPROCKET_PICKUP_LOCATION to one of the names above in your .env\n`);
+      }
+    } catch (e) {
+      console.warn('  ⚠️  Could not fetch pickup locations:', e.message);
+    }
   } catch (error) {
     console.error('⚠️  WARNING: Shiprocket initialization failed!');
     console.error('  This will cause shipping operations to fail.');
@@ -75,8 +101,8 @@ const initializeShiprocket = async () => {
 
 console.log(process.env.DB_HOST, process.env.DB_USER, process.env.DB_NAME)
 const PORT = process.env.PORT || 5500;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`\n✅ Server running on port ${PORT}`);
-  // Initialize Shiprocket after server starts
+  await runMigrations();
   initializeShiprocket();
 });
