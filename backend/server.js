@@ -23,6 +23,9 @@ const adminStatsRoute = require("./routes/admin-stats");
 
 const app = express();
 
+// Trust Vercel's proxy so rate limiter reads the real client IP
+app.set('trust proxy', 1);
+
 app.use(cors({
   origin: (origin, callback) => {
     const allowed = [
@@ -44,19 +47,21 @@ app.use(cors({
 
 // Rate limiting for auth routes — prevents brute-force attacks
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,                   // 20 requests per window per IP
+  windowMs: 15 * 60 * 1000,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => req.ip,
   message: { error: "Too many requests. Please try again in 15 minutes." },
 });
 
 // Stricter limiter for OTP endpoints
 const otpLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 5,                    // 5 OTP requests per window
+  windowMs: 10 * 60 * 1000,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => req.ip,
   message: { error: "Too many OTP requests. Please wait 10 minutes." },
 });
 
