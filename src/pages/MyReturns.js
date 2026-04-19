@@ -6,9 +6,8 @@ import "./MyReturns.css";
 
 const MyReturns = () => {
   const { user } = useContext(AuthContext);
-  const { returns, loading, fetchReturns } = useContext(ReturnsContext);
+  const { returns, loading } = useContext(ReturnsContext);
   const navigate = useNavigate();
-  const [expandedReturn, setExpandedReturn] = useState(null);
   const [selectedReturn, setSelectedReturn] = useState(null);
 
   useEffect(() => {

@@ -4,6 +4,7 @@ import { WishlistContext } from "../context/WishlistContext";
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import "./Wishlist.css";
+import API_URL from "../api_connection/BackendAPIConnection";
 
 const Wishlist = () => {
   const { wishlist, loading, removeFromWishlist } = useContext(WishlistContext);
@@ -12,8 +13,6 @@ const Wishlist = () => {
   const navigate = useNavigate();
   const [debugInfo, setDebugInfo] = useState("");
 
-  // Use the same API_URL as the context
-  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5500/api";
 
   useEffect(() => {
     if (!user) {
@@ -29,7 +28,7 @@ const Wishlist = () => {
       console.log("API_URL:", API_URL);
       setDebugInfo(`Loaded ${wishlist.length} items. API_URL: ${API_URL}`);
     }
-  }, [wishlist, API_URL]);
+  }, [wishlist]);
 
   const handleAddToCart = (product) => {
     addToCart(product);

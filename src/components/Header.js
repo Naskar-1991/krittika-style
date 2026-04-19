@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { CartContext } from "../context/CartContext";
 import { WishlistContext } from "../context/WishlistContext";
@@ -24,7 +24,6 @@ function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [logo, setLogo] = useState(null);
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     fetchLogo();
@@ -71,8 +70,6 @@ function Header() {
     }
     setMobileMenuOpen(false);
   };
-
-  const isActive = (path) => location.pathname === path;
 
   return (
     <header className="header">

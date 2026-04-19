@@ -2,19 +2,20 @@ import React, { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import "./AdminReturns.css";
+import BASE_URL from "../api_connection/BackendAPIConnection";
 
 const AdminReturns = () => {
-  const { user, isAdmin } = useContext(AuthContext);
+  const { isAdmin } = useContext(AuthContext);
   const navigate = useNavigate();
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [selectedReturn, setSelectedReturn] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [stats, setStats] = useState(null);
 
-  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5500/api";
+  const API_URL = `${BASE_URL}/api`;
 
   useEffect(() => {
     if (!isAdmin) {
@@ -25,6 +26,7 @@ const AdminReturns = () => {
   useEffect(() => {
     fetchReturns();
     fetchStats();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus]);
 
   const fetchReturns = async () => {

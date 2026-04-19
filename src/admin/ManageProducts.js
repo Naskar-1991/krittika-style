@@ -181,9 +181,8 @@ const ManageProducts = () => {
       }
 
       const ct = response.headers.get("content-type");
-      let savedProduct;
       if (ct && ct.includes("application/json")) {
-        savedProduct = await response.json();
+        await response.json();
       } else {
         const text = await response.text();
         throw new Error(text || "Unexpected response from server");

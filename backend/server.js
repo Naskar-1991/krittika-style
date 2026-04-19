@@ -24,8 +24,20 @@ const adminStatsRoute = require("./routes/admin-stats");
 const app = express();
 
 app.use(cors({
-  origin: ['https://dev.krittikastyle.com', 'https://api.krittikastyle.com', 'http://localhost:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: (origin, callback) => {
+    const allowed = [
+      'https://dev.krittikastyle.com',
+      'https://api.krittikastyle.com',
+      'http://localhost:3000',
+    ];
+    // Allow all Vercel preview/production deployments for this project
+    if (!origin || allowed.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -156,9 +168,13 @@ const initializeShiprocket = async () => {
 };
 
 console.log(process.env.DB_HOST, process.env.DB_USER, process.env.DB_NAME);
-const PORT = process.env.PORT || 5500;
-app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`\n✅ Server running on port ${PORT}`);
-  await runMigrations();
-  initializeShiprocket();
-});
+if (require.main === module) {
+  const PORT = process.env.PORT || 5500;
+  app.listen(PORT, '0.0.0.0', async () => {
+    console.log(`\n✅ Server running on port ${PORT}`);
+    await runMigrations();
+    initializeShiprocket();
+  });
+}
+
+module.exports = app;

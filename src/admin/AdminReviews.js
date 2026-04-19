@@ -5,7 +5,7 @@ import "./AdminReviews.css";
 import API_URL from "../api_connection/BackendAPIConnection";
 
 const AdminReviews = () => {
-  const { user, isAdmin } = useContext(AuthContext);
+  const { isAdmin } = useContext(AuthContext);
   const navigate = useNavigate();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +35,7 @@ const AdminReviews = () => {
   useEffect(() => {
     fetchReviews();
     fetchStats();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productFilter, userFilter, ratingFilter, sortBy, page]);
 
   const fetchReviews = async () => {

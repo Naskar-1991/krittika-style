@@ -13,6 +13,7 @@ const ReviewsList = ({ productId, refreshTrigger }) => {
   // Fetch reviews on mount and when product/sort changes
   useEffect(() => {
     fetchReviews();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId, sortBy, refreshTrigger]);
 
   const fetchReviews = async () => {

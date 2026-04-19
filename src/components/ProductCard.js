@@ -13,6 +13,7 @@ const ProductCard = ({ product }) => {
 
   useEffect(() => {
     fetchRatingStats();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]);
 
   const fetchRatingStats = async () => {

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { AuthContext } from "./AuthContext";
+import BASE_URL from "../api_connection/BackendAPIConnection";
 
 export const WishlistContext = createContext();
 
@@ -9,7 +10,7 @@ export const WishlistProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5500/api";
+  const API_URL = `${BASE_URL}/api`;
 
   // Fetch wishlist items for the current user
   const fetchWishlist = async () => {
@@ -109,6 +110,7 @@ export const WishlistProvider = ({ children }) => {
   // Fetch wishlist when user changes
   useEffect(() => {
     fetchWishlist();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   return (
