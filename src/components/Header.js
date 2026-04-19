@@ -1,5 +1,5 @@
-import React, { useState, useContext, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useContext, useEffect, useRef } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { CartContext } from "../context/CartContext";
 import { WishlistContext } from "../context/WishlistContext";
@@ -7,39 +7,101 @@ import API_URL from "../api_connection/BackendAPIConnection";
 import "./Header.css";
 
 const NAV_CATEGORIES = [
-  { label: "Silk Sarees",    query: "Silk" },
-  { label: "Cotton Sarees",  query: "Cotton" },
-  { label: "Banarasi",       query: "Banarasi" },
-  { label: "Handloom",       query: "Handloom" },
-  { label: "Bridal",         query: "Bridal" },
-  { label: "New Arrivals",   sort: "newest" },
+  { label: "Silk Sarees",   query: "Silk" },
+  { label: "Cotton Sarees", query: "Cotton" },
+  { label: "Banarasi",      query: "Banarasi" },
+  { label: "Handloom",      query: "Handloom" },
+  { label: "Bridal",        query: "Bridal" },
+  { label: "New Arrivals",  sort: "newest" },
 ];
+
+/* ── SVG icons ── */
+const IconSearch = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+);
+
+const IconHeart = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+  </svg>
+);
+
+const IconBag = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <path d="M16 10a4 4 0 0 1-8 0"/>
+  </svg>
+);
+
+const IconMenu = ({ open }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+    {open ? (
+      <>
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </>
+    ) : (
+      <>
+        <line x1="3" y1="6"  x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </>
+    )}
+  </svg>
+);
+
+function UserAvatar({ user }) {
+  const initial = (user.name || user.email || "U")[0].toUpperCase();
+  return <span className="user-avatar">{initial}</span>;
+}
 
 function Header() {
   const { user, logout, isAdmin } = useContext(AuthContext);
   const { cart } = useContext(CartContext);
   const { wishlist } = useContext(WishlistContext);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [logo, setLogo] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
+  const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => { fetchLogo(); }, []);
 
   useEffect(() => {
-    fetchLogo();
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const onClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => { setMobileOpen(false); }, [location]);
 
   const fetchLogo = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/logo`);
-      const data = await response.json();
+      const res = await fetch(`${API_URL}/api/logo`);
+      const data = await res.json();
       if (data.logo_url) setLogo(data);
-    } catch (error) {
-      console.error("Error fetching logo:", error);
-    }
+    } catch {}
   };
 
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const wishlistCount = wishlist.length;
 
   const handleLogout = () => {
@@ -48,40 +110,28 @@ function Header() {
     navigate("/");
   };
 
-  const handleNavClick = (path) => {
-    navigate(path);
-    setMobileMenuOpen(false);
-  };
-
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
       setSearchQuery("");
-      setMobileMenuOpen(false);
+      setMobileOpen(false);
     }
   };
 
-  const handleCategoryNav = (cat) => {
-    if (cat.sort) {
-      navigate(`/products?sort=${cat.sort}`);
-    } else {
-      navigate(`/products?search=${encodeURIComponent(cat.query)}`);
-    }
-    setMobileMenuOpen(false);
+  const handleCategory = (cat) => {
+    navigate(cat.sort ? `/products?sort=${cat.sort}` : `/products?search=${encodeURIComponent(cat.query)}`);
+    setMobileOpen(false);
   };
 
   return (
-    <header className="header">
-      {/* Top Bar */}
-      <div className="top-bar">
+    <header className={`header${scrolled ? " header--scrolled" : ""}`}>
+      {/* ── Top strip ── */}
+      <div className="top-strip">
         <div className="container">
-          <div className="top-bar-content">
-            <div className="top-bar-left">
-              <span>+91 7586826861</span>
-              <span>support@krittikastyle.com</span>
-            </div>
-            <div className="top-bar-right">
+          <div className="top-strip-inner">
+            <span>Free shipping on orders above ₹1,499</span>
+            <div className="top-strip-links">
               <a href="https://facebook.com" target="_blank" rel="noreferrer">Facebook</a>
               <a href="https://instagram.com" target="_blank" rel="noreferrer">Instagram</a>
               <a href="https://pinterest.com" target="_blank" rel="noreferrer">Pinterest</a>
@@ -90,200 +140,184 @@ function Header() {
         </div>
       </div>
 
-      {/* Main Nav */}
-      <nav className="navbar">
+      {/* ── Main bar ── */}
+      <div className="main-bar">
         <div className="container">
-          <div className="nav-wrapper">
+          <div className="main-bar-inner">
+
             {/* Logo */}
-            <Link to="/" className="logo">
-              {logo && logo.logo_url ? (
+            <Link to="/" className="logo" aria-label="Krittika Style — Home">
+              {logo?.logo_url ? (
                 <img
                   src={`${API_URL}${logo.logo_url}`}
                   alt={logo.logo_alt_text || "Krittika Style"}
                   className="logo-image"
-                  title={logo.site_name}
                 />
               ) : (
                 <>
-                  <span className="logo-icon-wrap">
-                    <span className="logo-icon">🥻</span>
+                  <span className="logo-mark" aria-hidden="true">
+                    <span className="logo-mark-inner">K</span>
                   </span>
-                  <span className="logo-text-wrap">
-                    <span className="logo-text">Krittika Style</span>
-                    <span className="logo-tagline">Handwoven Sarees</span>
+                  <span className="logo-wordmark">
+                    <span className="logo-name">Krittika Style</span>
+                    <span className="logo-sub">Handwoven Sarees</span>
                   </span>
                 </>
               )}
             </Link>
 
             {/* Search */}
-            <form className="search-bar" onSubmit={handleSearch}>
+            <form className="search-form" onSubmit={handleSearch} role="search">
+              <label htmlFor="site-search" className="sr-only">Search sarees</label>
+              <span className="search-icon-left" aria-hidden="true"><IconSearch /></span>
               <input
+                id="site-search"
                 type="text"
-                placeholder="Search sarees, fabrics, occasions..."
+                className="search-input"
+                placeholder="Search sarees, fabrics, occasions…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                autoComplete="off"
               />
-              <button type="submit" className="search-btn" aria-label="Search">
-                <span>🔍</span>
-              </button>
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="search-clear"
+                  onClick={() => setSearchQuery("")}
+                  aria-label="Clear search"
+                >
+                  ×
+                </button>
+              )}
             </form>
 
-            {/* Desktop Category Links */}
-            <div className="nav-menu">
-              {NAV_CATEGORIES.map((cat) => (
-                <button
-                  key={cat.label}
-                  className="nav-link"
-                  onClick={() => handleCategoryNav(cat)}
-                >
-                  {cat.label}
-                </button>
-              ))}
-              {isAdmin && (
-                <Link to="/admin" className="nav-link admin-link">
-                  Admin
-                </Link>
-              )}
-            </div>
-
-            {/* Right — Wishlist, Cart, User */}
-            <div className="nav-right">
-              <Link to="/wishlist" className="wishlist-icon" title="Wishlist">
-                <span className="wishlist-emoji">♡</span>
-                {wishlistCount > 0 && (
-                  <span className="wishlist-badge">{wishlistCount}</span>
-                )}
+            {/* Right actions */}
+            <div className="main-bar-right">
+              <Link to="/wishlist" className="icon-btn" aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ""}`}>
+                <IconHeart />
+                {wishlistCount > 0 && <span className="icon-badge">{wishlistCount}</span>}
               </Link>
 
-              <Link to="/cart" className="cart-icon" title="Cart">
-                <span className="cart-emoji">🛍</span>
-                {cartCount > 0 && (
-                  <span className="cart-badge">{cartCount}</span>
-                )}
+              <Link to="/cart" className="icon-btn" aria-label={`Cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}>
+                <IconBag />
+                {cartCount > 0 && <span className="icon-badge">{cartCount}</span>}
               </Link>
 
               {user ? (
-                <div className="user-menu-wrapper">
+                <div className="user-menu-wrap" ref={dropdownRef}>
                   <button
-                    className="user-menu-btn"
+                    className="user-btn"
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    aria-expanded={userMenuOpen}
+                    aria-haspopup="true"
                   >
-                    <span className="user-icon">◯</span>
-                    <span className="user-name">{user.name || user.email}</span>
+                    <UserAvatar user={user} />
                   </button>
 
                   {userMenuOpen && (
-                    <div className="user-dropdown">
-                      <div className="dropdown-header">
-                        {user.email}
-                        {user.role === "admin" && (
-                          <span className="admin-badge">Admin</span>
-                        )}
+                    <div className="user-dropdown" role="menu">
+                      <div className="dropdown-profile">
+                        <UserAvatar user={user} />
+                        <div className="dropdown-profile-info">
+                          <span className="dropdown-name">{user.name || "Account"}</span>
+                          <span className="dropdown-email">{user.email}</span>
+                        </div>
+                        {user.role === "admin" && <span className="admin-chip">Admin</span>}
                       </div>
-                      <Link to="/wishlist" onClick={() => setUserMenuOpen(false)}>
+                      <div className="dropdown-divider" />
+                      <Link to="/wishlist" className="dropdown-item" role="menuitem" onClick={() => setUserMenuOpen(false)}>
                         My Wishlist
                       </Link>
-                      <Link to="/orders" onClick={() => setUserMenuOpen(false)}>
+                      <Link to="/orders" className="dropdown-item" role="menuitem" onClick={() => setUserMenuOpen(false)}>
                         My Orders
                       </Link>
-                      <Link to="/returns" onClick={() => setUserMenuOpen(false)}>
+                      <Link to="/returns" className="dropdown-item" role="menuitem" onClick={() => setUserMenuOpen(false)}>
                         My Returns
                       </Link>
-                      <Link to="/profile" onClick={() => setUserMenuOpen(false)}>
+                      <Link to="/profile" className="dropdown-item" role="menuitem" onClick={() => setUserMenuOpen(false)}>
                         Profile &amp; Settings
                       </Link>
-                      <hr />
-                      <button onClick={handleLogout} className="logout-btn">
-                        Sign Out
+                      {isAdmin && (
+                        <Link to="/admin" className="dropdown-item" role="menuitem" onClick={() => setUserMenuOpen(false)}>
+                          Admin Dashboard
+                        </Link>
+                      )}
+                      <div className="dropdown-divider" />
+                      <button className="dropdown-item dropdown-signout" role="menuitem" onClick={handleLogout}>
+                        Sign out
                       </button>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="auth-buttons">
-                  <Link to="/login" className="btn-login">Login</Link>
-                  <Link to="/signup" className="btn-signup">Sign Up</Link>
+                <div className="auth-group">
+                  <Link to="/login" className="btn-text-login">Sign in</Link>
+                  <Link to="/signup" className="btn-filled-signup">Get Started</Link>
                 </div>
               )}
 
-              {/* Mobile toggle */}
               <button
-                className="mobile-menu-btn"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-label="Menu"
+                className="mobile-toggle"
+                onClick={() => setMobileOpen(!mobileOpen)}
+                aria-label={mobileOpen ? "Close menu" : "Open menu"}
+                aria-expanded={mobileOpen}
               >
-                <span></span>
-                <span></span>
-                <span></span>
+                <IconMenu open={mobileOpen} />
               </button>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── Category nav ── */}
+      <nav className="cat-nav" aria-label="Product categories">
+        <div className="container">
+          <div className="cat-nav-inner">
+            {NAV_CATEGORIES.map((cat) => (
+              <button
+                key={cat.label}
+                className="cat-link"
+                onClick={() => handleCategory(cat)}
+              >
+                {cat.label}
+              </button>
+            ))}
+            {isAdmin && (
+              <Link to="/admin" className="cat-link cat-link--admin">
+                Admin
+              </Link>
+            )}
+          </div>
+        </div>
       </nav>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="mobile-menu">
-          <form onSubmit={handleSearch} className="mobile-search-form">
-            <input
-              type="text"
-              placeholder="Search sarees..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button type="submit" className="mobile-search-btn">🔍</button>
-          </form>
-
+      {/* ── Mobile drawer ── */}
+      {mobileOpen && (
+        <div className="mobile-drawer" role="dialog" aria-label="Navigation menu">
+          <div className="mobile-section-label">Collections</div>
           {NAV_CATEGORIES.map((cat) => (
-            <button
-              key={cat.label}
-              className="mobile-link"
-              style={{ background: "none", border: "none", textAlign: "left", width: "100%", cursor: "pointer" }}
-              onClick={() => handleCategoryNav(cat)}
-            >
+            <button key={cat.label} className="mobile-item" onClick={() => handleCategory(cat)}>
               {cat.label}
             </button>
           ))}
 
-          {isAdmin && (
-            <Link
-              to="/admin"
-              onClick={() => handleNavClick("/admin")}
-              className="mobile-link admin-link"
-            >
-              Admin Dashboard
-            </Link>
-          )}
-
-          <hr style={{ borderColor: "rgba(255,255,255,0.08)", margin: "4px 0" }} />
-
           {user ? (
             <>
-              <Link to="/wishlist" onClick={() => handleNavClick("/wishlist")} className="mobile-link">
-                My Wishlist
-              </Link>
-              <Link to="/orders" onClick={() => handleNavClick("/orders")} className="mobile-link">
-                My Orders
-              </Link>
-              <Link to="/returns" onClick={() => handleNavClick("/returns")} className="mobile-link">
-                My Returns
-              </Link>
-              <Link to="/profile" onClick={() => handleNavClick("/profile")} className="mobile-link">
-                Profile &amp; Settings
-              </Link>
-              <button onClick={handleLogout} className="mobile-logout">
-                Sign Out
-              </button>
+              <div className="mobile-divider" />
+              <div className="mobile-section-label">Account</div>
+              <Link to="/wishlist" className="mobile-item">My Wishlist</Link>
+              <Link to="/orders" className="mobile-item">My Orders</Link>
+              <Link to="/returns" className="mobile-item">My Returns</Link>
+              <Link to="/profile" className="mobile-item">Profile &amp; Settings</Link>
+              {isAdmin && <Link to="/admin" className="mobile-item">Admin Dashboard</Link>}
+              <div className="mobile-divider" />
+              <button className="mobile-item mobile-signout" onClick={handleLogout}>Sign out</button>
             </>
           ) : (
             <>
-              <Link to="/login" onClick={() => handleNavClick("/login")} className="mobile-link">
-                Login
-              </Link>
-              <Link to="/signup" onClick={() => handleNavClick("/signup")} className="mobile-link">
-                Sign Up
-              </Link>
+              <div className="mobile-divider" />
+              <Link to="/login" className="mobile-item">Sign in</Link>
+              <Link to="/signup" className="mobile-item mobile-item--primary">Get Started</Link>
             </>
           )}
         </div>

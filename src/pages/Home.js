@@ -7,7 +7,6 @@ import { fetchCategories } from "../services/categoryService";
 import "./Home.css";
 import API_URL from "../api_connection/BackendAPIConnection";
 
-// Saree-specific category icons
 const CATEGORY_ICONS = {
   "Silk":       "🥻",
   "Cotton":     "🌿",
@@ -31,7 +30,6 @@ const CATEGORY_ICONS = {
   "Gifting":    "🎁",
 };
 
-// Keywords that identify saree-specific categories
 const SAREE_KEYWORDS = [
   "silk", "cotton", "saree", "sari", "banarasi", "banaras",
   "kanjivaram", "kanjeevaram", "handloom", "bridal", "festive",
@@ -39,6 +37,27 @@ const SAREE_KEYWORDS = [
   "tussar", "patola", "zari", "embroidered", "woven", "weave",
   "jacquard", "ikat", "bandhani", "kalamkari", "pochampally",
   "office", "gifting", "occasion", "party",
+];
+
+const TESTIMONIALS = [
+  {
+    name: "Priya Menon",
+    location: "Kochi",
+    initials: "PM",
+    text: "The Kanjivaram I ordered arrived beautifully packed. The zari work is stunning — exactly as shown. I wore it to my cousin's wedding and received so many compliments.",
+  },
+  {
+    name: "Asha Sharma",
+    location: "Jaipur",
+    initials: "AS",
+    text: "I was sceptical about buying a saree online, but the fabric quality of the handloom cotton I chose is exceptional. The colour is rich and the weave is tight. Will definitely order again.",
+  },
+  {
+    name: "Rekha Iyer",
+    location: "Bengaluru",
+    initials: "RI",
+    text: "Ordered a Banarasi for my mother's anniversary. The blouse stitching service was a lifesaver — everything arrived perfectly stitched and ready to wear. Packaging felt truly premium.",
+  },
 ];
 
 function isSareeCategory(name = "") {
@@ -53,18 +72,41 @@ function getCategoryIcon(name = "") {
   return key ? CATEGORY_ICONS[key] : "🥻";
 }
 
-const VISIBLE_CARDS = 4; // cards visible at once on desktop
+function useScrollReveal(deps) {
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("revealed");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.10 }
+    );
+    // Observe all [data-reveal] that haven't been revealed yet
+    document.querySelectorAll("[data-reveal]:not(.revealed)").forEach((el) =>
+      observer.observe(el)
+    );
+    return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
+
+const VISIBLE_CARDS = 4;
 
 function Home() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categoryProducts, setCategoryProducts] = useState({});
-
-  // Carousel state
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const autoPlayRef = useRef(null);
+
+  // Re-run observer whenever async data finishes rendering new sections
+  useScrollReveal([loading, Object.keys(categoryProducts).length]);
 
   useEffect(() => {
     fetchProducts();
@@ -84,7 +126,6 @@ function Home() {
     }
   };
 
-  // Auto-play: advances one card at a time, wraps around
   const maxIndex = Math.max(0, products.length - VISIBLE_CARDS);
 
   const nextSlide = useCallback(() => {
@@ -107,11 +148,9 @@ function Home() {
     try {
       const cats = await fetchCategories();
       setCategories(cats);
-
       const response = await fetch(`${API_URL}/api/products?limit=100`);
       const data = await response.json();
       const allProducts = Array.isArray(data) ? data : (data.products || []);
-
       const grouped = {};
       cats.forEach((cat) => {
         grouped[cat.id] = allProducts
@@ -124,18 +163,17 @@ function Home() {
     }
   };
 
-  // Only show saree-related categories on the landing page
   const sareeCategories = categories.filter((c) => isSareeCategory(c.name));
 
   return (
     <div className="home-page">
-      {/* Hero Banner */}
       <HomeBanner />
 
-      {/* Featured Sarees — Carousel */}
-      <section className="featured-section">
+      {/* Featured Sarees */}
+      <section className="featured-section" data-reveal>
         <div className="container">
           <div className="section-header">
+            <span className="section-tag">✦ Curated For You</span>
             <h2>Featured Sarees</h2>
             <p>Handpicked from our finest weaves — each piece curated for its craft and character</p>
             <Link to="/products" className="view-all-link">
@@ -145,7 +183,9 @@ function Home() {
 
           {loading ? (
             <div className="loading">
-              <p>Loading collection...</p>
+              <div className="loading-dots">
+                <span /><span /><span />
+              </div>
             </div>
           ) : (
             <div
@@ -153,22 +193,11 @@ function Home() {
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
             >
-              {/* Prev button */}
-              <button
-                className="carousel-btn carousel-btn--prev"
-                onClick={prevSlide}
-                aria-label="Previous"
-              >
-                ‹
-              </button>
-
-              {/* Sliding track */}
+              <button className="carousel-btn carousel-btn--prev" onClick={prevSlide} aria-label="Previous">‹</button>
               <div className="carousel-viewport">
                 <div
                   className="carousel-track"
-                  style={{
-                    transform: `translateX(calc(-${carouselIndex} * (100% / ${VISIBLE_CARDS})))`,
-                  }}
+                  style={{ transform: `translateX(calc(-${carouselIndex} * (100% / ${VISIBLE_CARDS})))` }}
                 >
                   {products.map((product) => (
                     <div key={product.id} className="carousel-slide">
@@ -177,17 +206,7 @@ function Home() {
                   ))}
                 </div>
               </div>
-
-              {/* Next button */}
-              <button
-                className="carousel-btn carousel-btn--next"
-                onClick={nextSlide}
-                aria-label="Next"
-              >
-                ›
-              </button>
-
-              {/* Dot indicators */}
+              <button className="carousel-btn carousel-btn--next" onClick={nextSlide} aria-label="Next">›</button>
               <div className="carousel-dots">
                 {Array.from({ length: maxIndex + 1 }, (_, i) => (
                   <button
@@ -203,24 +222,25 @@ function Home() {
         </div>
       </section>
 
-      {/* Shop by Category — saree categories only */}
+      {/* Shop by Category */}
       {sareeCategories.length > 0 && (
-        <section className="categories-showcase-section">
+        <section className="categories-showcase-section" data-reveal>
           <div className="container">
             <div className="section-header">
+              <span className="section-tag">✦ Explore</span>
               <h2>Shop by Weave &amp; Style</h2>
               <p>From everyday drapes to heirloom silks — explore by what speaks to you</p>
             </div>
-
             <div className="categories-grid">
-              {sareeCategories.map((category) => (
+              {sareeCategories.map((category, i) => (
                 <Link
                   key={category.id}
                   to={`/products?category=${category.id}`}
                   className="category-card"
+                  style={{ animationDelay: `${i * 0.06}s` }}
                 >
-                  <div className="category-icon">
-                    {getCategoryIcon(category.name)}
+                  <div className="category-icon-wrap">
+                    <span className="category-icon">{getCategoryIcon(category.name)}</span>
                   </div>
                   <div className="category-name">{category.name}</div>
                   <div className="category-count">
@@ -235,24 +255,21 @@ function Home() {
         </section>
       )}
 
-      {/* Category-wise product rows — saree categories only */}
+      {/* Category-wise product rows */}
       {sareeCategories.length > 0 &&
         sareeCategories.map(
           (category) =>
             categoryProducts[category.id]?.length > 0 && (
-              <section key={category.id} className="category-products-section">
+              <section key={category.id} className="category-products-section" data-reveal>
                 <div className="container">
                   <div className="section-header">
+                    <span className="section-tag">✦ {category.name}</span>
                     <h2>{category.name}</h2>
                     <p>{category.description || `Our finest ${category.name.toLowerCase()} — woven with care`}</p>
-                    <Link
-                      to={`/products?category=${category.id}`}
-                      className="view-all-link"
-                    >
+                    <Link to={`/products?category=${category.id}`} className="view-all-link">
                       View All {category.name} →
                     </Link>
                   </div>
-
                   <div className="products-grid">
                     {categoryProducts[category.id].map((product) => (
                       <ProductCard key={product.id} product={product} />
@@ -264,62 +281,31 @@ function Home() {
         )}
 
       {/* Testimonials */}
-      <section className="testimonials-section">
+      <section className="testimonials-section" data-reveal>
         <div className="container">
-          <h2 className="section-title">What Our Customers Say</h2>
+          <div className="section-header">
+            <span className="section-tag">✦ Real Reviews</span>
+            <h2>What Our Customers Say</h2>
+          </div>
           <div className="testimonials-grid">
-            <div className="testimonial-card">
-              <div className="stars">★★★★★</div>
-              <p className="testimonial-text">
-                "The Kanjivaram I ordered arrived beautifully packed. The zari work is
-                stunning — exactly as shown. I wore it to my cousin's wedding and
-                received so many compliments."
-              </p>
-              <div className="testimonial-author">
-                <span className="author-avatar">🙍‍♀️</span>
-                <div>
-                  <strong>Priya Menon</strong>
-                  <small>Kochi — Verified Buyer</small>
+            {TESTIMONIALS.map((t, i) => (
+              <div className="testimonial-card" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
+                <div className="stars" aria-label="5 stars">★★★★★</div>
+                <p className="testimonial-text">"{t.text}"</p>
+                <div className="testimonial-author">
+                  <div className="author-avatar-initial">{t.initials}</div>
+                  <div>
+                    <strong>{t.name}</strong>
+                    <small>{t.location} — Verified Buyer</small>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="testimonial-card">
-              <div className="stars">★★★★★</div>
-              <p className="testimonial-text">
-                "I was sceptical about buying a saree online, but the fabric quality
-                of the handloom cotton I chose is exceptional. The colour is rich and
-                the weave is tight. Will definitely order again."
-              </p>
-              <div className="testimonial-author">
-                <span className="author-avatar">🙍‍♀️</span>
-                <div>
-                  <strong>Asha Sharma</strong>
-                  <small>Jaipur — Verified Buyer</small>
-                </div>
-              </div>
-            </div>
-
-            <div className="testimonial-card">
-              <div className="stars">★★★★★</div>
-              <p className="testimonial-text">
-                "Ordered a Banarasi for my mother's anniversary. The blouse stitching
-                service was a lifesaver — everything arrived perfectly stitched and
-                ready to wear. Packaging felt truly premium."
-              </p>
-              <div className="testimonial-author">
-                <span className="author-avatar">🙍‍♀️</span>
-                <div>
-                  <strong>Rekha Iyer</strong>
-                  <small>Bengaluru — Verified Buyer</small>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Why Us strip */}
+      {/* Why Us */}
       <Hero />
     </div>
   );
