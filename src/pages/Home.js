@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import HomeBanner from "../components/HomeBanner";
 import Hero from "../components/Hero";
 import ProductCard from "../components/ProductCard";
+import ProductReel from "../components/ProductReel";
 import { fetchCategories } from "../services/categoryService";
 import "./Home.css";
 import API_URL from "../api_connection/BackendAPIConnection";
@@ -70,6 +71,16 @@ function getCategoryIcon(name = "") {
     name.toLowerCase().includes(k.toLowerCase())
   );
   return key ? CATEGORY_ICONS[key] : "🥻";
+}
+
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= breakpoint);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener("resize", handler, { passive: true });
+    return () => window.removeEventListener("resize", handler);
+  }, [breakpoint]);
+  return isMobile;
 }
 
 function useScrollReveal(deps) {
@@ -164,6 +175,7 @@ function Home() {
   };
 
   const sareeCategories = categories.filter((c) => isSareeCategory(c.name));
+  const isMobile = useIsMobile();
 
   return (
     <div className="home-page">
@@ -187,6 +199,8 @@ function Home() {
                 <span /><span /><span />
               </div>
             </div>
+          ) : isMobile ? (
+            <ProductReel products={products} />
           ) : (
             <div
               className="carousel-wrapper"
@@ -270,11 +284,15 @@ function Home() {
                       View All {category.name} →
                     </Link>
                   </div>
-                  <div className="products-grid">
-                    {categoryProducts[category.id].map((product) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
+                  {isMobile ? (
+                    <ProductReel products={categoryProducts[category.id]} />
+                  ) : (
+                    <div className="products-grid">
+                      {categoryProducts[category.id].map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </section>
             )

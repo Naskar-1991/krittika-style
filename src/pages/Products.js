@@ -1,9 +1,20 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
+import ProductReel from "../components/ProductReel";
 import CategorySidebar from "../components/CategorySidebar";
 import "./Products.css";
 import API_URL from "../api_connection/BackendAPIConnection";
+
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= breakpoint);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener("resize", handler, { passive: true });
+    return () => window.removeEventListener("resize", handler);
+  }, [breakpoint]);
+  return isMobile;
+}
 
 const ITEMS_PER_PAGE = 12;
 
@@ -128,6 +139,8 @@ const Products = () => {
     params.set("page", page);
     setSearchParams(params);
   };
+
+  const isMobile = useIsMobile();
 
   const hasActiveFilters =
     searchParams.get("search") ||
@@ -267,11 +280,15 @@ const Products = () => {
               </div>
             ) : (
               <>
-                <div className="products-grid">
-                  {products.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
+                {isMobile ? (
+                  <ProductReel products={products} />
+                ) : (
+                  <div className="products-grid">
+                    {products.map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+                )}
 
                 {/* Pagination */}
                 {totalPages > 1 && (
