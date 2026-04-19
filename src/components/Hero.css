@@ -402,25 +402,23 @@
 
 @media (max-width: 480px) {
   .hero-banner {
-    padding: 40px 0;
+    padding: 48px 0 40px;
   }
 
   .hero-content {
-    gap: 30px;
+    gap: 24px;
+  }
+
+  .hero-image {
+    display: none;
   }
 
   .hero-title {
-    font-size: 24px;
+    font-size: 28px;
   }
 
   .hero-description {
-    font-size: 14px;
-  }
-
-  .hero-illustration {
-    width: 150px;
-    height: 150px;
-    font-size: 60px;
+    font-size: 15px;
   }
 
   .stats-section {
@@ -446,6 +444,7 @@
 
   .btn {
     width: 100%;
+    min-height: 48px;
   }
 
   .feature-card {

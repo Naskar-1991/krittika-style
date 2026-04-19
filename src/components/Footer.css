@@ -162,8 +162,8 @@
 }
 
 .social-icon {
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 50%;
@@ -172,7 +172,7 @@
   justify-content: center;
   color: rgba(255, 255, 255, 0.55);
   text-decoration: none;
-  font-size: 12px;
+  font-size: 14px;
   transition: var(--transition);
 }
 
@@ -200,6 +200,10 @@
   text-decoration: none;
   letter-spacing: 0.02em;
   transition: color 0.25s ease;
+  padding: 6px 0;
+  display: inline-block;
+  min-height: 44px;
+  line-height: 32px;
 }
 
 .footer-links a:hover {
