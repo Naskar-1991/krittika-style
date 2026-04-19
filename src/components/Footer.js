@@ -11,7 +11,7 @@ function Footer() {
     if (email) {
       setSubscribed(true);
       setEmail("");
-      setTimeout(() => setSubscribed(false), 3000);
+      setTimeout(() => setSubscribed(false), 4000);
     }
   };
 
@@ -19,153 +19,158 @@ function Footer() {
 
   return (
     <footer className="footer">
-      {/* Newsletter Section */}
-      {/* <div className="newsletter-section">
+      {/* Newsletter */}
+      <div className="newsletter-section">
         <div className="container">
           <div className="newsletter-content">
             <div className="newsletter-text">
-              <h3>Subscribe to Our Newsletter</h3>
-              <p>Get special offers, new products, and exclusive deals delivered to your inbox!</p>
+              <h3>Stay Close to the Craft</h3>
+              <p>New weaves, care guides, and seasonal collections — straight to your inbox.</p>
             </div>
             <form onSubmit={handleSubscribe} className="newsletter-form">
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Your email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
               <button type="submit">Subscribe</button>
-              {subscribed && <span className="success-msg">✓ Thank you for subscribing!</span>}
+              {subscribed && (
+                <span className="success-msg">Thank you — you're in!</span>
+              )}
             </form>
           </div>
         </div>
-      </div> */}
+      </div>
 
       {/* Main Footer */}
       <div className="footer-main">
         <div className="container">
           <div className="footer-grid">
-            {/* About Section */}
+            {/* About */}
             <div className="footer-section">
-              <h4>About KrittikaStyle</h4>
+              <h4>Krittika Style</h4>
               <div className="logo-footer">
-                <span className="logo-icon">🛍️</span>
-                <span className="logo-text">KrittikaStyle</span>
+                <span className="logo-icon">🥻</span>
+                <span className="logo-text">Krittika Style</span>
               </div>
               <p>
-                Your one-stop destination for quality products at unbeatable prices.
-                We're committed to providing the best shopping experience.
+                A curated house of Indian handwoven sarees — sourced directly
+                from weavers across Bengal, Varanasi, and Kanchipuram. Every
+                drape tells a story.
               </p>
               <div className="social-links">
-                <a href="#facebook" className="social-icon">f</a>
-                <a href="#twitter" className="social-icon">𝕏</a>
-                <a href="#instagram" className="social-icon">📷</a>
-                <a href="#linkedin" className="social-icon">in</a>
+                <a href="https://facebook.com" target="_blank" rel="noreferrer" className="social-icon">f</a>
+                <a href="https://instagram.com" target="_blank" rel="noreferrer" className="social-icon">✦</a>
+                <a href="https://pinterest.com" target="_blank" rel="noreferrer" className="social-icon">P</a>
+                <a href="https://youtube.com"   target="_blank" rel="noreferrer" className="social-icon">▷</a>
               </div>
             </div>
 
-            {/* Quick Links */}
+            {/* Collections */}
             <div className="footer-section">
-              <h4>Quick Links</h4>
+              <h4>Collections</h4>
               <ul className="footer-links">
-                <li><Link to="/">Home</Link></li>
-                <li><Link to="/">Shop</Link></li>
-                <li><a href="#deals">Special Offers</a></li>
-                <li><a href="#trending">Trending Products</a></li>
-                <li><a href="#new">New Arrivals</a></li>
+                <li><Link to="/products?search=Silk">Silk Sarees</Link></li>
+                <li><Link to="/products?search=Cotton">Cotton Sarees</Link></li>
+                <li><Link to="/products?search=Banarasi">Banarasi</Link></li>
+                <li><Link to="/products?search=Kanjivaram">Kanjivaram</Link></li>
+                <li><Link to="/products?search=Handloom">Handloom</Link></li>
+                <li><Link to="/products?sort=newest">New Arrivals</Link></li>
               </ul>
             </div>
 
-            {/* Customer Support */}
+            {/* Shop by Occasion */}
             <div className="footer-section">
-              <h4>Customer Support</h4>
+              <h4>Shop by Occasion</h4>
               <ul className="footer-links">
-                <li><a href="#contact">Contact Us</a></li>
-                <li><a href="#faq">FAQ</a></li>
-                <li><a href="#shipping">Shipping Info</a></li>
-                <li><a href="#returns">Returns & Exchanges</a></li>
-                <li><a href="#track">Track Order</a></li>
+                <li><Link to="/products?search=Bridal">Bridal &amp; Wedding</Link></li>
+                <li><Link to="/products?search=Festive">Festive &amp; Puja</Link></li>
+                <li><Link to="/products?search=Casual">Everyday Wear</Link></li>
+                <li><Link to="/products?search=Office">Office Wear</Link></li>
+                <li><Link to="/products?search=Gifting">Gifting</Link></li>
               </ul>
             </div>
 
-            {/* Company */}
+            {/* Customer Care */}
             <div className="footer-section">
-              <h4>Company</h4>
+              <h4>Customer Care</h4>
               <ul className="footer-links">
-                <li><a href="#about">About Us</a></li>
-                <li><a href="#careers">Careers</a></li>
-                <li><a href="#blog">Blog</a></li>
-                <li><a href="#partnership">Partnership</a></li>
-                <li><a href="#press">Press</a></li>
+                <li><a href="mailto:support@krittikastyle.com">Contact Us</a></li>
+                <li><Link to="/orders">Track My Order</Link></li>
+                <li><Link to="/returns">Returns &amp; Exchanges</Link></li>
+                <li><a href="#shipping">Shipping Information</a></li>
+                <li><a href="#sizing">Blouse Size Guide</a></li>
+                <li><a href="#care">Fabric Care Guide</a></li>
               </ul>
             </div>
 
-            {/* Payment Methods */}
+            {/* We Accept */}
             <div className="footer-section">
-              <h4>Payment Methods</h4>
+              <h4>Secure Payments</h4>
               <div className="payment-methods">
-                <span className="payment-icon">💳</span>
-                <span className="payment-icon">🏦</span>
-                <span className="payment-icon">📱</span>
-                <span className="payment-icon">🪙</span>
+                <span className="payment-icon" title="UPI">📱</span>
+                <span className="payment-icon" title="Net Banking">🏦</span>
+                <span className="payment-icon" title="Credit / Debit Card">💳</span>
+                <span className="payment-icon" title="EMI">🪙</span>
               </div>
               <h5>We Accept</h5>
-              <p>Visa, Mastercard, Paypal, Apple Pay, Google Pay</p>
+              <p>UPI · Net Banking · Visa · Mastercard · RuPay · EMI</p>
+              <h5>Shipped via</h5>
+              <p>Shiprocket · Pan-India delivery with live tracking</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Information Bar */}
-      {/* <div className="footer-info-bar">
+      {/* Trust bar */}
+      <div className="footer-info-bar">
         <div className="container">
           <div className="info-grid">
             <div className="info-item">
-              <span className="info-icon">🚚</span>
+              <span className="info-icon">🧵</span>
               <div>
-                <strong>Free Shipping</strong>
-                <p>On orders over $50</p>
+                <strong>Handwoven &amp; Authentic</strong>
+                <p>Sourced from India's finest weaving clusters</p>
               </div>
             </div>
             <div className="info-item">
-              <span className="info-icon">🔒</span>
+              <span className="info-icon">🚚</span>
               <div>
-                <strong>100% Secure</strong>
-                <p>Secure checkout</p>
+                <strong>Pan-India Shipping</strong>
+                <p>Fast delivery with live Shiprocket tracking</p>
               </div>
             </div>
             <div className="info-item">
               <span className="info-icon">🔄</span>
               <div>
-                <strong>Easy Returns</strong>
-                <p>30-day return policy</p>
+                <strong>7-Day Returns</strong>
+                <p>Easy, no-questions returns on all sarees</p>
               </div>
             </div>
             <div className="info-item">
-              <span className="info-icon">☎️</span>
+              <span className="info-icon">🔒</span>
               <div>
-                <strong>24/7 Support</strong>
-                <p>Dedicated customer service</p>
+                <strong>100% Secure Checkout</strong>
+                <p>Razorpay-powered encrypted payments</p>
               </div>
             </div>
           </div>
         </div>
-      </div> */}
+      </div>
 
-      {/* Bottom Footer */}
+      {/* Bottom */}
       <div className="footer-bottom">
         <div className="container">
           <div className="footer-bottom-content">
             <div className="copyright">
-              <p>&copy; {currentYear} KrittikaStyle. All rights reserved.</p>
+              <p>&copy; {currentYear} Krittika Style. All rights reserved.</p>
             </div>
             <div className="footer-bottom-links">
               <a href="#privacy">Privacy Policy</a>
               <span className="divider">|</span>
               <a href="#terms">Terms of Service</a>
-              <span className="divider">|</span>
-              <a href="#cookies">Cookie Settings</a>
               <span className="divider">|</span>
               <a href="#sitemap">Sitemap</a>
             </div>

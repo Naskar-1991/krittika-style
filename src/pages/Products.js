@@ -1,94 +1,146 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import CategorySidebar from "../components/CategorySidebar";
 import "./Products.css";
 import API_URL from "../api_connection/BackendAPIConnection";
 
-const Products = () => {
-  const [searchParams] = useSearchParams();
-  const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [sortBy, setSortBy] = useState("popular");
-  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
-  const [priceRange, setPriceRange] = useState([0, 100000]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+const ITEMS_PER_PAGE = 12;
 
+const SORT_OPTIONS = [
+  { value: "newest",     label: "Newest First" },
+  { value: "price-low",  label: "Price: Low to High" },
+  { value: "price-high", label: "Price: High to Low" },
+  { value: "name_asc",   label: "Name: A → Z" },
+  { value: "name_desc",  label: "Name: Z → A" },
+];
+
+const Products = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Server data
+  const [products, setProducts]       = useState([]);
+  const [total, setTotal]             = useState(0);
+  const [totalPages, setTotalPages]   = useState(0);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState("");
+
+  // Local filter state (controls the sidebar inputs)
+  const [searchInput, setSearchInput]       = useState(searchParams.get("search") || "");
+  const [sortBy, setSortBy]                 = useState(searchParams.get("sort") || "newest");
+  const [minPrice, setMinPrice]             = useState(Number(searchParams.get("minPrice")) || 0);
+  const [maxPrice, setMaxPrice]             = useState(Number(searchParams.get("maxPrice")) || 50000);
+  const [selectedCategory, setSelectedCategory] = useState(
+    searchParams.get("category") ? parseInt(searchParams.get("category")) : null
+  );
+
+  const currentPage = parseInt(searchParams.get("page")) || 1;
+
+  // Sync local inputs when URL params change externally (nav clicks, back button)
   useEffect(() => {
-    // Update search term and category when URL params change
-    const urlSearch = searchParams.get("search") || "";
-    const urlCategory = searchParams.get("category") ? parseInt(searchParams.get("category")) : null;
-    setSearchTerm(urlSearch);
-    setSelectedCategory(urlCategory);
+    setSearchInput(searchParams.get("search") || "");
+    setSortBy(searchParams.get("sort") || "newest");
+    setMinPrice(Number(searchParams.get("minPrice")) || 0);
+    setMaxPrice(Number(searchParams.get("maxPrice")) || 50000);
+    setSelectedCategory(
+      searchParams.get("category") ? parseInt(searchParams.get("category")) : null
+    );
+  }, [searchParams]);
+
+  // Fetch from backend whenever URL params change
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams(searchParams);
+      if (!params.get("page")) params.set("page", "1");
+      params.set("limit", ITEMS_PER_PAGE);
+
+      const res = await fetch(`${API_URL}/api/products?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to fetch products");
+      const data = await res.json();
+
+      // Handle both paginated response and legacy array response
+      if (Array.isArray(data)) {
+        setProducts(data);
+        setTotal(data.length);
+        setTotalPages(1);
+      } else {
+        setProducts(data.products || []);
+        setTotal(data.total || 0);
+        setTotalPages(data.totalPages || 1);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }, [searchParams]);
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [fetchProducts]);
 
-  useEffect(() => {
-    filterAndSortProducts();
-  }, [products, sortBy, searchTerm, priceRange, selectedCategory]);
-
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/products`);
-      if (!response.ok) throw new Error("Failed to fetch products");
-      const data = await response.json();
-      setProducts(data);
-      setLoading(false);
-    } catch (err) {
-      setError(err.message);
-      setLoading(false);
-    }
+  // Apply sidebar filters → update URL params → triggers fetch
+  const applyFilters = () => {
+    const params = new URLSearchParams();
+    if (searchInput.trim())    params.set("search", searchInput.trim());
+    if (selectedCategory)      params.set("category", selectedCategory);
+    if (sortBy !== "newest")   params.set("sort", sortBy);
+    if (minPrice > 0)          params.set("minPrice", minPrice);
+    if (maxPrice < 50000)      params.set("maxPrice", maxPrice);
+    params.set("page", "1");
+    setSearchParams(params);
   };
 
-  const filterAndSortProducts = () => {
-    let result = [...products];
-
-    // Category filter
-    if (selectedCategory) {
-      result = result.filter(p => p.category_id === selectedCategory);
-    }
-
-    // Search filter
-    if (searchTerm) {
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.description && p.description.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    // Price filter
-    result = result.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
-
-    // Sorting
-    switch (sortBy) {
-      case "price-low":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price-high":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "newest":
-        result.sort((a, b) => (b.id || 0) - (a.id || 0));
-        break;
-      case "popular":
-      default:
-        break;
-    }
-
-    setFilteredProducts(result);
+  const resetFilters = () => {
+    setSearchInput("");
+    setSortBy("newest");
+    setMinPrice(0);
+    setMaxPrice(50000);
+    setSelectedCategory(null);
+    setSearchParams({});
   };
+
+  // Category immediate-apply (no need to click Apply)
+  const handleCategorySelect = (catId) => {
+    setSelectedCategory(catId);
+    const params = new URLSearchParams(searchParams);
+    if (catId) params.set("category", catId);
+    else params.delete("category");
+    params.set("page", "1");
+    setSearchParams(params);
+  };
+
+  // Sort immediate-apply
+  const handleSortChange = (value) => {
+    setSortBy(value);
+    const params = new URLSearchParams(searchParams);
+    if (value !== "newest") params.set("sort", value);
+    else params.delete("sort");
+    params.set("page", "1");
+    setSearchParams(params);
+  };
+
+  const goToPage = (page) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("page", page);
+    setSearchParams(params);
+  };
+
+  const hasActiveFilters =
+    searchParams.get("search") ||
+    searchParams.get("category") ||
+    searchParams.get("minPrice") ||
+    searchParams.get("maxPrice");
 
   if (loading) {
     return (
       <div className="products-page">
         <div className="loading-container">
           <div className="spinner"></div>
-          <p>Loading products...</p>
+          <p>Loading sarees...</p>
         </div>
       </div>
     );
@@ -100,11 +152,16 @@ const Products = () => {
         {/* Header */}
         <div className="products-header">
           <div>
-            <h1>Our Products</h1>
-            <p>Discover our amazing collection of quality products</p>
+            <h1>All Sarees</h1>
+            <p>
+              {hasActiveFilters
+                ? `${total} saree${total !== 1 ? "s" : ""} found`
+                : "Our complete handwoven collection"}
+            </p>
           </div>
           <div className="product-count">
-            Showing {filteredProducts.length} of {products.length} products
+            {total} saree{total !== 1 ? "s" : ""}
+            {totalPages > 1 && ` · Page ${currentPage} of ${totalPages}`}
           </div>
         </div>
 
@@ -114,116 +171,159 @@ const Products = () => {
           </div>
         )}
 
-        {products.length === 0 ? (
-          <div className="no-products">
-            <span className="no-products-emoji">📦</span>
-            <p>No products available at the moment.</p>
-          </div>
-        ) : (
-          <div className="products-container">
-            {/* Sidebar with Categories and Filters */}
-            <aside className="products-sidebar">
-              <CategorySidebar
-                selectedCategory={selectedCategory}
-                onCategorySelect={setSelectedCategory}
+        <div className="products-container">
+          {/* Sidebar */}
+          <aside className="products-sidebar">
+            {/* Category */}
+            <CategorySidebar
+              selectedCategory={selectedCategory}
+              onCategorySelect={handleCategorySelect}
+            />
+
+            <div className="filter-divider" />
+
+            {/* Search */}
+            <div className="filter-section">
+              <h3>Search</h3>
+              <input
+                type="text"
+                placeholder="Search sarees..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && applyFilters()}
+                className="search-input"
               />
+            </div>
 
-              <div className="filter-divider"></div>
+            {/* Sort */}
+            <div className="filter-section">
+              <h3>Sort By</h3>
+              <select
+                value={sortBy}
+                onChange={(e) => handleSortChange(e.target.value)}
+                className="sort-select"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
 
-              <div className="filter-section">
-                <h3>Search</h3>
+            {/* Price */}
+            <div className="filter-section">
+              <h3>Price Range</h3>
+              <div className="price-filter">
+                <label>Min: ₹{minPrice.toLocaleString("en-IN")}</label>
                 <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="search-input"
+                  type="range"
+                  min="0"
+                  max="50000"
+                  step="500"
+                  value={minPrice}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    if (v <= maxPrice) setMinPrice(v);
+                  }}
+                  className="price-slider"
                 />
               </div>
-
-              <div className="filter-section">
-                <h3>Sort By</h3>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="sort-select"
-                >
-                  <option value="popular">Most Popular</option>
-                  <option value="newest">Newest</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                </select>
+              <div className="price-filter">
+                <label>Max: ₹{maxPrice.toLocaleString("en-IN")}</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="50000"
+                  step="500"
+                  value={maxPrice}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    if (v >= minPrice) setMaxPrice(v);
+                  }}
+                  className="price-slider"
+                />
               </div>
+            </div>
 
-              <div className="filter-section">
-                <h3>Price Range</h3>
-                <div className="price-filter">
-                  <label>Min: ₹{priceRange[0]}</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100000"
-                    step="1000"
-                    value={priceRange[0]}
-                    onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
-                    className="price-slider"
-                  />
-                </div>
-                <div className="price-filter">
-                  <label>Max: ₹{priceRange[1]}</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100000"
-                    step="1000"
-                    value={priceRange[1]}
-                    onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
-                    className="price-slider"
-                  />
-                </div>
-              </div>
+            <button onClick={applyFilters} className="reset-filters-btn" style={{ marginBottom: "8px" }}>
+              Apply Filters
+            </button>
 
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setSortBy("popular");
-                  setPriceRange([0, 100000]);
-                  setSelectedCategory(null);
-                }}
-                className="reset-filters-btn"
-              >
-                Reset Filters
+            {hasActiveFilters && (
+              <button onClick={resetFilters} className="reset-filters-btn reset-filters-btn--outline">
+                Clear All
               </button>
-            </aside>
+            )}
+          </aside>
 
-            {/* Products Grid */}
-            <main className="products-main">
-              {filteredProducts.length === 0 ? (
-                <div className="no-results">
-                  <span className="no-results-emoji">🔍</span>
-                  <p>No products found matching your search.</p>
-                  <button
-                    onClick={() => {
-                      setSearchTerm("");
-                      setSortBy("popular");
-                      setPriceRange([0, 100000]);
-                      setSelectedCategory(null);
-                    }}
-                    className="reset-btn"
-                  >
-                    Clear Filters
-                  </button>
-                </div>
-              ) : (
+          {/* Products + Pagination */}
+          <main className="products-main">
+            {products.length === 0 ? (
+              <div className="no-results">
+                <span className="no-results-emoji">🔍</span>
+                <p>No sarees found matching your filters.</p>
+                <button onClick={resetFilters} className="reset-btn">
+                  Clear Filters
+                </button>
+              </div>
+            ) : (
+              <>
                 <div className="products-grid">
-                  {filteredProducts.map((product) => (
+                  {products.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
-              )}
-            </main>
-          </div>
-        )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="pagination">
+                    <button
+                      className="page-btn"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage <= 1}
+                    >
+                      ← Prev
+                    </button>
+
+                    <div className="page-numbers">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter((p) =>
+                          p === 1 ||
+                          p === totalPages ||
+                          Math.abs(p - currentPage) <= 2
+                        )
+                        .reduce((acc, p, idx, arr) => {
+                          if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
+                          acc.push(p);
+                          return acc;
+                        }, [])
+                        .map((item, idx) =>
+                          item === "..." ? (
+                            <span key={`ellipsis-${idx}`} className="page-ellipsis">…</span>
+                          ) : (
+                            <button
+                              key={item}
+                              className={`page-btn page-num ${item === currentPage ? "active" : ""}`}
+                              onClick={() => goToPage(item)}
+                            >
+                              {item}
+                            </button>
+                          )
+                        )}
+                    </div>
+
+                    <button
+                      className="page-btn"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage >= totalPages}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </main>
+        </div>
       </div>
     </div>
   );

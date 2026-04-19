@@ -52,6 +52,122 @@
   color: #666;
 }
 
+/* ─── Featured Sarees Carousel ─── */
+.carousel-wrapper {
+  position: relative;
+  padding: 0 52px;          /* room for arrow buttons */
+}
+
+.carousel-viewport {
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.carousel-track {
+  display: flex;
+  gap: 0;
+  transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+
+.carousel-slide {
+  flex: 0 0 calc(100% / 4);   /* 4 visible on desktop */
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+/* Arrow buttons */
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-60%);   /* keep above the dot row */
+  z-index: 10;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  background: white;
+  color: #667eea;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(102, 126, 234, 0.15);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  padding: 0;
+}
+
+.carousel-btn:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.35);
+}
+
+.carousel-btn--prev { left: 0; }
+.carousel-btn--next { right: 0; }
+
+/* Dot indicators */
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 28px;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: #d0ceea;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.25s ease, transform 0.25s ease, width 0.25s ease;
+}
+
+.carousel-dot.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: 24px;
+  border-radius: 4px;
+  transform: none;
+}
+
+/* Responsive carousel */
+@media (max-width: 1024px) {
+  .carousel-slide {
+    flex: 0 0 calc(100% / 3);
+  }
+}
+
+@media (max-width: 768px) {
+  .carousel-wrapper {
+    padding: 0 44px;
+  }
+
+  .carousel-slide {
+    flex: 0 0 calc(100% / 2);
+  }
+
+  .carousel-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .carousel-wrapper {
+    padding: 0 38px;
+  }
+
+  .carousel-slide {
+    flex: 0 0 100%;
+  }
+}
+
 /* Testimonials Section */
 .testimonials-section {
   padding: 80px 0;

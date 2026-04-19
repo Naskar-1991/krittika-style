@@ -1,6 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const rateLimit = require("express-rate-limit");
+const dotenv = require("dotenv");
+dotenv.config();
+
 const authRoute = require("./routes/auth");
 const ordersRoute = require("./routes/orders");
 const productsRoute = require("./routes/products");
@@ -14,9 +18,11 @@ const returnsRoute = require("./routes/returns");
 const adminReturnsRoute = require("./routes/admin-returns");
 const logoRoute = require("./routes/logo");
 const reviewsRoute = require("./routes/reviews");
-const dotenv = require('dotenv')
-dotenv.config();
+const couponsRoute = require("./routes/coupons");
+const adminStatsRoute = require("./routes/admin-stats");
+
 const app = express();
+
 app.use(cors({
   origin: ['https://dev.krittikastyle.com', 'https://api.krittikastyle.com', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -24,8 +30,24 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Rate limiting for auth routes — prevents brute-force attacks
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,                   // 20 requests per window per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please try again in 15 minutes." },
+});
 
-// allow JSON payloads and urlencoded for form submissions
+// Stricter limiter for OTP endpoints
+const otpLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 5,                    // 5 OTP requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many OTP requests. Please wait 10 minutes." },
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -35,8 +57,15 @@ const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
-// serve uploaded files statically
 app.use("/uploads", express.static(uploadDir));
+
+// Apply rate limiters to auth routes
+app.use("/api/auth", authLimiter);
+app.use("/api/auth/signup-initiate", otpLimiter);
+app.use("/api/auth/signup-resend-otp", otpLimiter);
+app.use("/api/auth/login-initiate", otpLimiter);
+
+// Mount routes
 app.use("/api/auth", authRoute);
 app.use("/api/products", productsRoute);
 app.use("/api/categories", categoriesRoute);
@@ -48,17 +77,49 @@ app.use("/api/webhooks", webhooksRoute);
 app.use("/api/wishlist", wishlistRoute);
 app.use("/api/returns", returnsRoute);
 app.use("/api/admin/returns", adminReturnsRoute);
+app.use("/api/admin/stats", adminStatsRoute);
 app.use("/api/logo", logoRoute);
 app.use("/api/reviews", reviewsRoute);
+app.use("/api/coupons", couponsRoute);
 
 // ==================== AUTO MIGRATIONS ====================
 const pool = require("./db");
 const runMigrations = async () => {
   try {
+    // Shiprocket order id column
     await pool.query(`
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS shiprocket_order_id BIGINT
     `);
-    console.log("✅ Migrations applied (shiprocket_order_id column ready)");
+
+    // Add user_id to cart table (scopes cart rows to individual users)
+    await pool.query(`
+      ALTER TABLE cart ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+    `);
+
+    // Add created_at to cart if missing
+    await pool.query(`
+      ALTER TABLE cart ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()
+    `);
+
+    // Coupons table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS coupons (
+        id            SERIAL PRIMARY KEY,
+        code          VARCHAR(50) UNIQUE NOT NULL,
+        discount_type VARCHAR(20) NOT NULL CHECK (discount_type IN ('percentage', 'flat')),
+        discount_value NUMERIC(10, 2) NOT NULL,
+        min_order_value NUMERIC(10, 2),
+        max_discount_amount NUMERIC(10, 2),
+        max_uses      INTEGER,
+        used_count    INTEGER NOT NULL DEFAULT 0,
+        expires_at    TIMESTAMPTZ,
+        description   TEXT,
+        is_active     BOOLEAN NOT NULL DEFAULT true,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    console.log("✅ Migrations applied successfully");
   } catch (err) {
     console.error("⚠️  Migration error:", err.message);
   }
@@ -68,14 +129,12 @@ const runMigrations = async () => {
 const ShiprocketClient = require("./shiprocketService");
 global.shiprocket = new ShiprocketClient();
 
-// Initialize Shiprocket on server startup
 const initializeShiprocket = async () => {
   try {
     console.log('\n🚀 Initializing Shiprocket Integration...');
     await global.shiprocket.initialize();
     console.log('✅ Shiprocket is ready!');
 
-    // Print all pickup location names so we can verify SHIPROCKET_PICKUP_LOCATION
     try {
       const pickupData = await global.shiprocket.listPickupLocations();
       const locations = pickupData?.data?.shipping_address || [];
@@ -91,15 +150,12 @@ const initializeShiprocket = async () => {
     }
   } catch (error) {
     console.error('⚠️  WARNING: Shiprocket initialization failed!');
-    console.error('  This will cause shipping operations to fail.');
     console.error('  Error:', error.message);
-    console.error('\n  Action: Check your environment variables:');
-    console.error('  - SHIPROCKET_EMAIL');
-    console.error('  - SHIPROCKET_API_KEY\n');
+    console.error('\n  Action: Check SHIPROCKET_EMAIL and SHIPROCKET_API_KEY in .env\n');
   }
 };
 
-console.log(process.env.DB_HOST, process.env.DB_USER, process.env.DB_NAME)
+console.log(process.env.DB_HOST, process.env.DB_USER, process.env.DB_NAME);
 const PORT = process.env.PORT || 5500;
 app.listen(PORT, '0.0.0.0', async () => {
   console.log(`\n✅ Server running on port ${PORT}`);

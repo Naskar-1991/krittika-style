@@ -58,13 +58,12 @@ function ProductDetails() {
       setProduct(data);
       
       // Fetch related products (same category)
-      const allProductsResponse = await fetch(`${API_URL}/api/products`);
-      if (allProductsResponse.ok) {
-        const allProducts = await allProductsResponse.json();
-        const related = allProducts
-          .filter(p => p.id !== parseInt(id))
-          .slice(0, 4);
-        setRelatedProducts(related);
+      const categoryParam = data.category_id ? `&category=${data.category_id}` : "";
+      const relatedRes = await fetch(`${API_URL}/api/products?limit=5${categoryParam}`);
+      if (relatedRes.ok) {
+        const relatedData = await relatedRes.json();
+        const list = Array.isArray(relatedData) ? relatedData : (relatedData.products || []);
+        setRelatedProducts(list.filter(p => p.id !== parseInt(id)).slice(0, 4));
       }
       
       setLoading(false);

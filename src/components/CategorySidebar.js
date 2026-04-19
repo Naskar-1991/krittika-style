@@ -2,6 +2,20 @@ import React, { useState, useEffect } from "react";
 import { fetchCategories } from "../services/categoryService";
 import "./CategorySidebar.css";
 
+const SAREE_KEYWORDS = [
+  "silk", "cotton", "saree", "sari", "banarasi", "banaras",
+  "kanjivaram", "kanjeevaram", "handloom", "bridal", "festive",
+  "casual", "printed", "designer", "linen", "georgette", "chiffon",
+  "tussar", "patola", "zari", "embroidered", "woven", "weave",
+  "jacquard", "ikat", "bandhani", "kalamkari", "pochampally",
+  "office", "gifting", "occasion", "party",
+];
+
+const isSareeCategory = (name = "") => {
+  const lower = name.toLowerCase();
+  return SAREE_KEYWORDS.some((kw) => lower.includes(kw));
+};
+
 const CategorySidebar = ({ selectedCategory, onCategorySelect }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +29,9 @@ const CategorySidebar = ({ selectedCategory, onCategorySelect }) => {
     try {
       setLoading(true);
       const data = await fetchCategories();
-      setCategories(data || []);
+      // Only show saree-related categories
+      const sareeOnly = (data || []).filter((c) => isSareeCategory(c.name));
+      setCategories(sareeOnly);
     } catch (error) {
       console.error("Error loading categories:", error);
       setCategories([]);
@@ -25,9 +41,9 @@ const CategorySidebar = ({ selectedCategory, onCategorySelect }) => {
   };
 
   const getSelectedCategoryName = () => {
-    if (!selectedCategory) return "All Products";
+    if (!selectedCategory) return "All Sarees";
     const category = categories.find((cat) => cat.id === selectedCategory);
-    return category ? category.name : "All Products";
+    return category ? category.name : "All Sarees";
   };
 
   const handleCategorySelect = (categoryId) => {
@@ -59,7 +75,7 @@ const CategorySidebar = ({ selectedCategory, onCategorySelect }) => {
                   onClick={() => handleCategorySelect(null)}
                 >
                   <span className="item-icon">✓</span>
-                  All Products
+                  All Sarees
                 </button>
 
                 {categories.length > 0 ? (

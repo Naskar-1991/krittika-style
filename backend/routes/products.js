@@ -5,308 +5,294 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const path = require("path");
 
-// configure multer storage
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "..", "uploads"));
-  },
-  filename: function (req, file, cb) {
+  destination: (req, file, cb) => cb(null, path.join(__dirname, "..", "uploads")),
+  filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    const basename = path.basename(file.originalname, ext);
-    cb(null, basename + '-' + Date.now() + ext);
-  }
+    const base = path.basename(file.originalname, ext);
+    cb(null, `${base}-${Date.now()}${ext}`);
+  },
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) {
-      cb(new Error('Only image files are allowed'), false);
-    } else {
-      cb(null, true);
-    }
-  }
+    if (!file.mimetype.startsWith("image/")) cb(new Error("Only image files are allowed"), false);
+    else cb(null, true);
+  },
 });
-
 
 const SECRET = process.env.JWT_SECRET || "supersecret";
 
-// Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: "No token provided" });
-
   const token = authHeader.split(" ")[1];
   try {
-    const decoded = jwt.verify(token, SECRET);
-    req.user = decoded;
+    req.user = jwt.verify(token, SECRET);
     next();
-  } catch (err) {
+  } catch {
     res.status(401).json({ error: "Invalid token" });
   }
 };
 
-// Middleware to verify admin role
 const verifyAdmin = async (req, res, next) => {
   try {
-    const result = await pool.query(
-      "SELECT role FROM users WHERE id=$1",
-      [req.user.id]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
-    
-    const user = result.rows[0];
-    if (user.role !== "admin") return res.status(403).json({ error: "Admin access required" });
-    
+    const result = await pool.query("SELECT role FROM users WHERE id=$1", [req.user.id]);
+    if (!result.rows.length || result.rows[0].role !== "admin")
+      return res.status(403).json({ error: "Admin access required" });
     next();
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Get all products (public)
+// ─── Build shared WHERE clause ────────────────────────────────────────────────
+function buildWhere(query) {
+  const { search, category, minPrice, maxPrice } = query;
+  const conditions = [];
+  const values = [];
+  let idx = 1;
+
+  if (search) {
+    conditions.push(
+      `(p.name ILIKE $${idx} OR p.description ILIKE $${idx} OR c.name ILIKE $${idx})`
+    );
+    values.push(`%${search}%`);
+    idx++;
+  }
+
+  if (category) {
+    if (!isNaN(category)) {
+      conditions.push(`p.category_id = $${idx}`);
+      values.push(parseInt(category));
+    } else {
+      conditions.push(`c.name ILIKE $${idx}`);
+      values.push(`%${category}%`);
+    }
+    idx++;
+  }
+
+  if (minPrice) {
+    conditions.push(`p.price >= $${idx}`);
+    values.push(parseFloat(minPrice));
+    idx++;
+  }
+
+  if (maxPrice) {
+    conditions.push(`p.price <= $${idx}`);
+    values.push(parseFloat(maxPrice));
+    idx++;
+  }
+
+  return { where: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "", values, nextIdx: idx };
+}
+
+function buildOrder(sort) {
+  const map = {
+    price_asc:  "ORDER BY p.price ASC",
+    "price-low": "ORDER BY p.price ASC",
+    price_desc: "ORDER BY p.price DESC",
+    "price-high": "ORDER BY p.price DESC",
+    newest:     "ORDER BY p.created_at DESC",
+    oldest:     "ORDER BY p.created_at ASC",
+    name_asc:   "ORDER BY p.name ASC",
+    name_desc:  "ORDER BY p.name DESC",
+  };
+  return map[sort] || "ORDER BY p.created_at DESC";
+}
+
+// GET /api/products — paginated, filtered, sorted (public)
 router.get("/", async (req, res) => {
   try {
-    // Try to fetch with category name
-    let result;
-    try {
-      result = await pool.query(
-        `SELECT p.*, c.name as category_name 
-         FROM products p 
-         LEFT JOIN categories c ON p.category_id = c.id 
-         ORDER BY p.created_at DESC`
-      );
-    } catch (joinError) {
-      // Fallback if categories table doesn't exist
-      console.log("Categories table not found, fetching products without categories");
-      result = await pool.query(
-        "SELECT * FROM products ORDER BY created_at DESC"
-      );
-    }
-    
-    // Fetch images for each product
-    const productsWithImages = await Promise.all(
-      result.rows.map(async (product) => {
-        const imagesResult = await pool.query(
-          "SELECT id, image_url, is_primary FROM product_images WHERE product_id=$1 ORDER BY display_order ASC",
-          [product.id]
-        );
-        return {
-          ...product,
-          images: imagesResult.rows,
-          category_name: product.category_name || null  // Ensure category_name exists
-        };
-      })
+    const pageNum  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(req.query.limit) || 12));
+    const offset   = (pageNum - 1) * limitNum;
+
+    const { where, values, nextIdx } = buildWhere(req.query);
+    const order = buildOrder(req.query.sort);
+
+    // Count query (no pagination, no images JOIN needed)
+    const countResult = await pool.query(
+      `SELECT COUNT(DISTINCT p.id) AS total
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.id
+       ${where}`,
+      values
     );
-    
-    res.json(productsWithImages);
+    const total = parseInt(countResult.rows[0].total);
+
+    // Data query
+    const dataValues = [...values, limitNum, offset];
+    const dataResult = await pool.query(
+      `SELECT
+         p.*,
+         c.name AS category_name,
+         COALESCE(
+           json_agg(
+             json_build_object('id', pi.id, 'image_url', pi.image_url, 'is_primary', pi.is_primary)
+             ORDER BY pi.display_order ASC
+           ) FILTER (WHERE pi.id IS NOT NULL),
+           '[]'::json
+         ) AS images
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.id
+       LEFT JOIN product_images pi ON pi.product_id = p.id
+       ${where}
+       GROUP BY p.id, c.name
+       ${order}
+       LIMIT $${nextIdx} OFFSET $${nextIdx + 1}`,
+      dataValues
+    );
+
+    res.json({
+      products: dataResult.rows,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum),
+      limit: limitNum,
+    });
   } catch (err) {
     console.error("Error fetching products:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get single product by ID (public) with all images
+// GET /api/products/:id — single product with all images (public)
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    // Try to fetch with category name
-    let result;
-    try {
-      result = await pool.query(
-        `SELECT p.*, c.name as category_name 
-         FROM products p 
-         LEFT JOIN categories c ON p.category_id = c.id 
-         WHERE p.id=$1`,
-        [id]
-      );
-    } catch (joinError) {
-      // Fallback if categories table doesn't exist
-      result = await pool.query(
-        "SELECT * FROM products WHERE id=$1",
-        [id]
-      );
-    }
-    
-    if (result.rows.length === 0) return res.status(404).json({ error: "Product not found" });
-    
-    const product = result.rows[0];
-    
-    // Fetch all images for this product
-    const imagesResult = await pool.query(
-      "SELECT id, image_url, is_primary FROM product_images WHERE product_id=$1 ORDER BY display_order ASC",
+    const result = await pool.query(
+      `SELECT
+         p.*,
+         c.name AS category_name,
+         COALESCE(
+           json_agg(
+             json_build_object('id', pi.id, 'image_url', pi.image_url, 'is_primary', pi.is_primary)
+             ORDER BY pi.display_order ASC
+           ) FILTER (WHERE pi.id IS NOT NULL),
+           '[]'::json
+         ) AS images
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.id
+       LEFT JOIN product_images pi ON pi.product_id = p.id
+       WHERE p.id = $1
+       GROUP BY p.id, c.name`,
       [id]
     );
-    
-    res.json({
-      ...product,
-      images: imagesResult.rows,
-      category_name: product.category_name || null  // Ensure category_name exists
-    });
+    if (!result.rows.length) return res.status(404).json({ error: "Product not found" });
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error("Error fetching product:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Add new product (admin only) with multiple file uploads
-router.post("/", authenticateToken, verifyAdmin, upload.array('images', 10), async (req, res) => {
-  req.body = req.body || {};
-  const { name, price, description, stock, original_price, category_id } = req.body;
-  
-  if (!name || !price) {
-    return res.status(400).json({ error: "Name and price are required" });
-  }
+// POST /api/products — create (admin)
+router.post("/", authenticateToken, verifyAdmin, upload.array("images", 10), async (req, res) => {
+  const { name, price, description, stock, original_price, category_id } = req.body || {};
+  if (!name || !price) return res.status(400).json({ error: "Name and price are required" });
 
   try {
-    // Insert product
     const productResult = await pool.query(
-      "INSERT INTO products (name, price, original_price, description, stock, category_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *",
+      "INSERT INTO products (name, price, original_price, description, stock, category_id, created_at) VALUES ($1,$2,$3,$4,$5,$6,NOW()) RETURNING *",
       [name, price, original_price || null, description || null, stock || 0, category_id || null]
     );
-    
     const productId = productResult.rows[0].id;
-    
-    // Insert multiple images if provided
     const images = [];
-    if (req.files && req.files.length > 0) {
+
+    if (req.files?.length) {
       for (let i = 0; i < req.files.length; i++) {
-        const file = req.files[i];
-        const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
-        const isFirst = i === 0;
-        
-        const imageResult = await pool.query(
-          "INSERT INTO product_images (product_id, image_url, display_order, is_primary) VALUES ($1, $2, $3, $4) RETURNING *",
-          [productId, imageUrl, i, isFirst]
+        const url = `${req.protocol}://${req.get("host")}/uploads/${req.files[i].filename}`;
+        const img = await pool.query(
+          "INSERT INTO product_images (product_id, image_url, display_order, is_primary) VALUES ($1,$2,$3,$4) RETURNING *",
+          [productId, url, i, i === 0]
         );
-        
-        images.push(imageResult.rows[0]);
+        images.push(img.rows[0]);
       }
     }
-    
-    res.status(201).json({
-      ...productResult.rows[0],
-      images
-    });
+
+    res.status(201).json({ ...productResult.rows[0], images });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Update product (admin only) with optional multiple image uploads
-router.put("/:id", authenticateToken, verifyAdmin, upload.array('images', 10), async (req, res) => {
-  req.body = req.body || {};
+// PUT /api/products/:id — update (admin)
+router.put("/:id", authenticateToken, verifyAdmin, upload.array("images", 10), async (req, res) => {
   const { id } = req.params;
-  const { name, price, description, stock, original_price, removeImageIds, category_id } = req.body;
+  const { name, price, description, stock, original_price, removeImageIds, category_id } = req.body || {};
 
   try {
-    // Update product info
     const result = await pool.query(
       "UPDATE products SET name=$1, price=$2, original_price=$3, description=$4, stock=$5, category_id=$6 WHERE id=$7 RETURNING *",
       [name || null, price || null, original_price || null, description || null, stock || 0, category_id || null, id]
     );
-    
-    if (result.rows.length === 0) return res.status(404).json({ error: "Product not found" });
-    
-    const product = result.rows[0];
-    
-    // Remove specified images
+    if (!result.rows.length) return res.status(404).json({ error: "Product not found" });
+
     if (removeImageIds) {
-      const idsArray = Array.isArray(removeImageIds) ? removeImageIds : [removeImageIds];
-      await pool.query(
-        "DELETE FROM product_images WHERE product_id=$1 AND id = ANY($2::int[])",
-        [id, idsArray]
-      );
+      const ids = Array.isArray(removeImageIds) ? removeImageIds : [removeImageIds];
+      await pool.query("DELETE FROM product_images WHERE product_id=$1 AND id = ANY($2::int[])", [id, ids]);
     }
-    
-    // Add new images
-    let newImages = [];
-    if (req.files && req.files.length > 0) {
-      // Get the current max order
-      const maxOrderResult = await pool.query(
-        "SELECT COALESCE(MAX(display_order), -1) as max_order FROM product_images WHERE product_id=$1",
-        [id]
+
+    if (req.files?.length) {
+      const maxOrd = await pool.query(
+        "SELECT COALESCE(MAX(display_order),-1) AS m FROM product_images WHERE product_id=$1", [id]
       );
-      let nextOrder = maxOrderResult.rows[0].max_order + 1;
-      
+      let nextOrder = maxOrd.rows[0].m + 1;
       for (const file of req.files) {
-        const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
-        
-        const imageResult = await pool.query(
-          "INSERT INTO product_images (product_id, image_url, display_order, is_primary) VALUES ($1, $2, $3, $4) RETURNING *",
-          [id, imageUrl, nextOrder, false]
+        const url = `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
+        await pool.query(
+          "INSERT INTO product_images (product_id, image_url, display_order, is_primary) VALUES ($1,$2,$3,false)",
+          [id, url, nextOrder++]
         );
-        
-        newImages.push(imageResult.rows[0]);
-        nextOrder++;
       }
     }
-    
-    // Fetch all images for this product
+
     const imagesResult = await pool.query(
-      "SELECT id, image_url, is_primary FROM product_images WHERE product_id=$1 ORDER BY display_order ASC",
-      [id]
+      "SELECT id, image_url, is_primary FROM product_images WHERE product_id=$1 ORDER BY display_order ASC", [id]
     );
-    
-    res.json({
-      ...product,
-      images: imagesResult.rows,
-      newImagesAdded: newImages.length
-    });
+    res.json({ ...result.rows[0], images: imagesResult.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Delete product (admin only)
+// DELETE /api/products/:id (admin)
 router.delete("/:id", authenticateToken, verifyAdmin, async (req, res) => {
-  const { id } = req.params;
-
   try {
-    const result = await pool.query("DELETE FROM products WHERE id=$1 RETURNING *", [id]);
-    if (result.rows.length === 0) return res.status(404).json({ error: "Product not found" });
-    res.json({ message: "Product deleted successfully", product: result.rows[0] });
+    const result = await pool.query("DELETE FROM products WHERE id=$1 RETURNING *", [req.params.id]);
+    if (!result.rows.length) return res.status(404).json({ error: "Product not found" });
+    res.json({ message: "Product deleted", product: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Delete a specific product image (admin only)
+// DELETE /api/products/:productId/images/:imageId (admin)
 router.delete("/:productId/images/:imageId", authenticateToken, verifyAdmin, async (req, res) => {
-  const { productId, imageId } = req.params;
-
   try {
     const result = await pool.query(
       "DELETE FROM product_images WHERE id=$1 AND product_id=$2 RETURNING *",
-      [imageId, productId]
+      [req.params.imageId, req.params.productId]
     );
-    
-    if (result.rows.length === 0) return res.status(404).json({ error: "Image not found" });
-    res.json({ message: "Image deleted successfully" });
+    if (!result.rows.length) return res.status(404).json({ error: "Image not found" });
+    res.json({ message: "Image deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Set primary image for product (admin only)
+// PUT /api/products/:productId/images/:imageId/primary (admin)
 router.put("/:productId/images/:imageId/primary", authenticateToken, verifyAdmin, async (req, res) => {
   const { productId, imageId } = req.params;
-
   try {
-    // Remove primary from all images of this product
-    await pool.query(
-      "UPDATE product_images SET is_primary=FALSE WHERE product_id=$1",
-      [productId]
-    );
-    
-    // Set the specified image as primary
+    await pool.query("UPDATE product_images SET is_primary=FALSE WHERE product_id=$1", [productId]);
     const result = await pool.query(
       "UPDATE product_images SET is_primary=TRUE WHERE id=$1 AND product_id=$2 RETURNING *",
       [imageId, productId]
     );
-    
-    if (result.rows.length === 0) return res.status(404).json({ error: "Image not found" });
+    if (!result.rows.length) return res.status(404).json({ error: "Image not found" });
     res.json({ message: "Primary image updated", image: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });

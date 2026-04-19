@@ -468,7 +468,17 @@ router.post("/login", async (req, res) => {
       SECRET,
       { expiresIn: "7d" }
     );
-    res.json({ token });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        mobileVerified: user.mobile_verified,
+        role: user.role,
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

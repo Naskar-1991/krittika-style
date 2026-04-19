@@ -1,18 +1,26 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import API_URL from "../api_connection/BackendAPIConnection";
 import { AuthContext } from "../context/AuthContext";
 import { fetchCategories } from "../services/categoryService";
 
+const ADMIN_PAGE_SIZE = 20;
+
 const ManageProducts = () => {
   const { user } = useContext(AuthContext);
+  const formRef = useRef(null);
+  const isFirstRender = useRef(true);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -22,24 +30,45 @@ const ManageProducts = () => {
     category_id: "",
   });
 
-  // Fetch all products
   useEffect(() => {
-    fetchProducts();
     fetchCategoriesList();
   }, []);
 
-  const fetchProducts = async () => {
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      fetchProducts(currentPage, true); // first load: full-page spinner
+    } else {
+      fetchProducts(currentPage);       // page changes: inline spinner only
+    }
+  }, [currentPage]);
+
+  const fetchProducts = async (page = 1, isInitial = false) => {
     try {
-      setLoading(true);
-      const response = await fetch(`${API_URL}/api/products`);
+      if (isInitial) setLoading(true);
+      else setTableLoading(true);
+
+      const response = await fetch(
+        `${API_URL}/api/products?page=${page}&limit=${ADMIN_PAGE_SIZE}&sort=newest`
+      );
       if (!response.ok) throw new Error("Failed to fetch products");
       const data = await response.json();
-      setProducts(data);
+      // Handle both paginated { products, total, totalPages } and legacy array
+      if (Array.isArray(data)) {
+        setProducts(data);
+        setTotalCount(data.length);
+        setTotalPages(1);
+      } else {
+        setProducts(data.products || []);
+        setTotalCount(data.total || 0);
+        setTotalPages(data.totalPages || 1);
+      }
       setError("");
     } catch (err) {
       setError("Error loading products: " + err.message);
     } finally {
       setLoading(false);
+      setTableLoading(false);
     }
   };
 
@@ -160,14 +189,9 @@ const ManageProducts = () => {
         throw new Error(text || "Unexpected response from server");
       }
       
-      if (editingId) {
-        setProducts(products.map(p => p.id === editingId ? savedProduct : p));
-      } else {
-        setProducts([savedProduct, ...products]);
-      }
-
       resetForm();
       setError("");
+      fetchProducts(currentPage); // non-blocking table refresh (tableLoading, not loading)
     } catch (err) {
       setError(err.message);
     }
@@ -182,17 +206,21 @@ const ManageProducts = () => {
       stock: product.stock || "",
       category_id: product.category_id || "",
     });
-    
-    // Show existing images
+
     if (product.images && product.images.length > 0) {
       setImagePreviews(product.images.map(img => img.image_url));
     } else {
       setImagePreviews([]);
     }
-    
+
     setImageFiles([]);
     setEditingId(product.id);
     setShowForm(true);
+
+    // Scroll the edit form into view after React re-renders
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
   };
 
   const handleDelete = async (id) => {
@@ -211,8 +239,11 @@ const ManageProducts = () => {
         throw new Error(errorData.error || "Failed to delete product");
       }
 
-      setProducts(products.filter(p => p.id !== id));
       setError("");
+      // If deleting last item on page > 1, go back a page
+      const newPage = products.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
+      setCurrentPage(newPage);
+      fetchProducts(newPage);
     } catch (err) {
       setError(err.message);
     }
@@ -263,12 +294,12 @@ const ManageProducts = () => {
       </button>
 
       {showForm && (
-        <div style={{
+        <div ref={formRef} style={{
           background: "#f9f9f9",
           padding: "20px",
           borderRadius: "4px",
           marginBottom: "20px",
-          border: "1px solid #ddd",
+          border: "2px solid #667eea",
         }}>
           <h2>{editingId ? "Edit Product" : "Add New Product"}</h2>
           <form onSubmit={handleSubmit}>
@@ -457,7 +488,16 @@ const ManageProducts = () => {
         </div>
       )}
 
-      <h2>Products List ({products.length})</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+        <h2 style={{ margin: 0 }}>
+          Products ({totalCount} total)
+          {totalPages > 1 && ` — Page ${currentPage} of ${totalPages}`}
+        </h2>
+        {tableLoading && (
+          <span style={{ fontSize: "13px", color: "#667eea", fontStyle: "italic" }}>Refreshing…</span>
+        )}
+      </div>
+
       {products.length === 0 ? (
         <p>No products found. Add a new product to get started.</p>
       ) : (
@@ -596,6 +636,73 @@ const ManageProducts = () => {
             ))}
           </tbody>
         </table>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "20px", justifyContent: "center" }}>
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage <= 1}
+            style={{
+              padding: "8px 16px",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+              background: currentPage <= 1 ? "#f5f5f5" : "white",
+              cursor: currentPage <= 1 ? "not-allowed" : "pointer",
+              opacity: currentPage <= 1 ? 0.5 : 1,
+            }}
+          >
+            ← Prev
+          </button>
+
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+            .reduce((acc, p, idx, arr) => {
+              if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
+              acc.push(p);
+              return acc;
+            }, [])
+            .map((item, idx) =>
+              item === "..." ? (
+                <span key={`e-${idx}`} style={{ padding: "0 4px", color: "#999" }}>…</span>
+              ) : (
+                <button
+                  key={item}
+                  onClick={() => setCurrentPage(item)}
+                  style={{
+                    padding: "8px 14px",
+                    border: "1px solid",
+                    borderColor: item === currentPage ? "#667eea" : "#ddd",
+                    borderRadius: "4px",
+                    background: item === currentPage
+                      ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                      : "white",
+                    color: item === currentPage ? "white" : "#333",
+                    cursor: "pointer",
+                    fontWeight: item === currentPage ? "600" : "400",
+                  }}
+                >
+                  {item}
+                </button>
+              )
+            )}
+
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage >= totalPages}
+            style={{
+              padding: "8px 16px",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+              background: currentPage >= totalPages ? "#f5f5f5" : "white",
+              cursor: currentPage >= totalPages ? "not-allowed" : "pointer",
+              opacity: currentPage >= totalPages ? 0.5 : 1,
+            }}
+          >
+            Next →
+          </button>
+        </div>
       )}
     </div>
   );
