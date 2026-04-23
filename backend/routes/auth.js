@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require("../db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { generateOTP, sendOTP, verifyOTP, canResendOTP, formatPhoneNumber } = require("../services/otpService");
+const { generateOTP, sendOTP, sendOTPEmail, maskEmail, verifyOTP, canResendOTP, formatPhoneNumber } = require("../services/otpService");
 
 const SECRET = process.env.JWT_SECRET || "supersecret";
 const OTP_EXPIRY_MINUTES = parseInt(process.env.OTP_EXPIRY_MINUTES || "10");
@@ -250,20 +250,19 @@ router.post("/login-initiate", async (req, res) => {
     let result;
     let user;
 
-    // Find user by email or mobile
+    // Find user by email or mobile — fetch name + email + mobile for dual-send
     if (email) {
       result = await pool.query(
-        "SELECT id, mobile FROM users WHERE email = $1 AND mobile_verified = true",
+        "SELECT id, name, email, mobile, last_otp_sent FROM users WHERE email = $1 AND mobile_verified = true",
         [email]
       );
     } else {
-      // Validate mobile format
       const cleanedMobile = mobile.replace(/\D/g, "");
       if (cleanedMobile.length !== 10) {
         return res.status(400).json({ error: "Please enter a valid 10-digit mobile number" });
       }
       result = await pool.query(
-        "SELECT id, mobile FROM users WHERE mobile = $1 AND mobile_verified = true",
+        "SELECT id, name, email, mobile, last_otp_sent FROM users WHERE mobile = $1 AND mobile_verified = true",
         [mobile]
       );
     }
@@ -276,16 +275,8 @@ router.post("/login-initiate", async (req, res) => {
 
     user = result.rows[0];
 
-    // Check rate limiting
-    const lastOtpResult = await pool.query(
-      "SELECT last_otp_sent FROM users WHERE id = $1",
-      [user.id]
-    );
-
-    if (
-      lastOtpResult.rows[0].last_otp_sent &&
-      !canResendOTP(lastOtpResult.rows[0].last_otp_sent, 30)
-    ) {
+    // Rate limiting
+    if (user.last_otp_sent && !canResendOTP(user.last_otp_sent, 30)) {
       return res.status(429).json({
         error: "Please wait 30 seconds before requesting a new OTP",
       });
@@ -294,18 +285,22 @@ router.post("/login-initiate", async (req, res) => {
     // Generate OTP
     const otp = generateOTP();
     const otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-
-    // Format phone number
     const formattedPhone = formatPhoneNumber(user.mobile);
 
-    // Send OTP
-    const otpSent = await sendOTP(formattedPhone, otp);
+    // Send to both SMS and email in parallel; at least one must succeed
+    const [smsSent, emailSent] = await Promise.allSettled([
+      sendOTP(formattedPhone, otp),
+      sendOTPEmail(user.email, otp, user.name),
+    ]);
 
-    if (!otpSent) {
+    const smsOk   = smsSent.status   === "fulfilled" && smsSent.value   === true;
+    const emailOk = emailSent.status === "fulfilled" && emailSent.value === true;
+
+    if (!smsOk && !emailOk) {
       return res.status(500).json({ error: "Failed to send OTP. Please try again." });
     }
 
-    // Store OTP for verification
+    // Store OTP
     await pool.query(
       `UPDATE users SET otp_code = $1, otp_expiry = $2, otp_attempts = 0, last_otp_sent = CURRENT_TIMESTAMP
        WHERE id = $3`,
@@ -313,8 +308,9 @@ router.post("/login-initiate", async (req, res) => {
     );
 
     res.json({
-      message: "OTP sent successfully to your registered mobile",
-      mobileHint: `${formattedPhone.slice(-4)}`, // Show last 4 digits
+      message: "OTP sent to your registered mobile and email",
+      mobileHint: formattedPhone.slice(-4),
+      emailHint: maskEmail(user.email),
       expiresIn: OTP_EXPIRY_MINUTES,
     });
   } catch (err) {

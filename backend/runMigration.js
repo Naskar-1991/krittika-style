@@ -17,7 +17,7 @@ async function runMigration() {
         console.log("✅ Connected to PostgreSQL");
 
         // Read migration file
-        const migrationPath = path.join(__dirname, 'MIGRATION_ADD_REVIEWS.sql');
+        const migrationPath = path.join(__dirname, process.argv[2] || 'MIGRATION_ADD_REVIEWS.sql');
         const sql = fs.readFileSync(migrationPath, 'utf-8');
 
         console.log("\n📋 Running migration: MIGRATION_ADD_REVIEWS.sql...\n");

@@ -103,6 +103,21 @@ app.use("/api/coupons", couponsRoute);
 const pool = require("./db");
 const runMigrations = async () => {
   try {
+    // Restore SERIAL sequence on orders.id if it was lost
+    await pool.query(`
+      DO $$
+      DECLARE seq_name text;
+      BEGIN
+        SELECT pg_get_serial_sequence('orders', 'id') INTO seq_name;
+        IF seq_name IS NULL THEN
+          CREATE SEQUENCE IF NOT EXISTS orders_id_seq;
+          ALTER TABLE orders ALTER COLUMN id SET DEFAULT nextval('orders_id_seq');
+          PERFORM setval('orders_id_seq', COALESCE((SELECT MAX(id) FROM orders), 0) + 1, false);
+          ALTER SEQUENCE orders_id_seq OWNED BY orders.id;
+        END IF;
+      END $$;
+    `);
+
     // Shiprocket order id column
     await pool.query(`
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS shiprocket_order_id BIGINT
