@@ -18,6 +18,9 @@
   font-size: 2.5rem;
   color: #333;
   margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .returns-header p {
@@ -36,8 +39,10 @@
 }
 
 .empty-icon {
-  font-size: 4rem;
+  display: flex;
+  justify-content: center;
   margin-bottom: 20px;
+  color: var(--primary, #667eea);
 }
 
 .empty-state h2 {
@@ -149,7 +154,9 @@
 }
 
 .status-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 8px 16px;
   border-radius: 20px;
   color: white;

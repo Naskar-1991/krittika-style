@@ -42,9 +42,9 @@
 }
 
 .dropdown-icon {
-  font-size: 18px;
   display: flex;
   align-items: center;
+  color: var(--primary);
 }
 
 .dropdown-label {

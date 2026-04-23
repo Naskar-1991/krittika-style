@@ -4,6 +4,9 @@ import { ReturnsContext } from "../context/ReturnsContext";
 import { AuthContext } from "../context/AuthContext";
 import "./MyReturns.css";
 
+const IcoBox      = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>;
+const IcoInbox    = () => <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{opacity:0.35}}><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>;
+
 const MyReturns = () => {
   const { user } = useContext(AuthContext);
   const { returns, loading } = useContext(ReturnsContext);
@@ -38,23 +41,16 @@ const MyReturns = () => {
   };
 
   const getStatusIcon = (status) => {
+    const s = { strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round" };
     switch (status) {
-      case "pending":
-        return "⏳";
-      case "approved":
-        return "✓";
-      case "shipped":
-        return "📦";
-      case "received":
-        return "📥";
-      case "refunded":
-        return "💰";
-      case "rejected":
-        return "✕";
-      case "cancelled":
-        return "🚫";
-      default:
-        return "•";
+      case "pending":    return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...s}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+      case "approved":   return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...s}><polyline points="20 6 9 17 4 12"/></svg>;
+      case "shipped":    return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...s}><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>;
+      case "received":   return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...s}><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>;
+      case "refunded":   return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...s}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
+      case "rejected":   return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...s}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+      case "cancelled":  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...s}><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>;
+      default:           return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...s}><circle cx="12" cy="12" r="2"/></svg>;
     }
   };
 
@@ -102,7 +98,7 @@ const MyReturns = () => {
   return (
     <div className="my-returns-container">
       <div className="returns-header">
-        <h1>📦 My Returns & Refunds</h1>
+        <h1><IcoBox /> My Returns & Refunds</h1>
         <p>Track your return requests and refund status</p>
       </div>
 
@@ -113,7 +109,7 @@ const MyReturns = () => {
         </div>
       ) : returns.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📭</div>
+          <div className="empty-icon"><IcoInbox /></div>
           <h2>No returns yet</h2>
           <p>You haven't made any return requests</p>
           <button

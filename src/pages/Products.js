@@ -1,42 +1,34 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
-import ProductReel from "../components/ProductReel";
 import CategorySidebar from "../components/CategorySidebar";
 import "./Products.css";
 import API_URL from "../api_connection/BackendAPIConnection";
-
-function useIsMobile(breakpoint = 768) {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= breakpoint);
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth <= breakpoint);
-    window.addEventListener("resize", handler, { passive: true });
-    return () => window.removeEventListener("resize", handler);
-  }, [breakpoint]);
-  return isMobile;
-}
 
 const ITEMS_PER_PAGE = 12;
 
 const SORT_OPTIONS = [
   { value: "newest",     label: "Newest First" },
-  { value: "price-low",  label: "Price: Low to High" },
-  { value: "price-high", label: "Price: High to Low" },
+  { value: "price-low",  label: "Price: Low → High" },
+  { value: "price-high", label: "Price: High → Low" },
   { value: "name_asc",   label: "Name: A → Z" },
   { value: "name_desc",  label: "Name: Z → A" },
 ];
 
+const IcoFilter  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>;
+const IcoSort    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>;
+const IcoX       = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IcoChevron = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>;
+
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Server data
   const [products, setProducts]       = useState([]);
   const [total, setTotal]             = useState(0);
   const [totalPages, setTotalPages]   = useState(0);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState("");
 
-  // Local filter state (controls the sidebar inputs)
   const [searchInput, setSearchInput]       = useState(searchParams.get("search") || "");
   const [sortBy, setSortBy]                 = useState(searchParams.get("sort") || "newest");
   const [minPrice, setMinPrice]             = useState(Number(searchParams.get("minPrice")) || 0);
@@ -45,9 +37,12 @@ const Products = () => {
     searchParams.get("category") ? parseInt(searchParams.get("category")) : null
   );
 
+  // Mobile filter panel state
+  const [showFilters, setShowFilters]   = useState(false);
+  const [showSortMenu, setShowSortMenu] = useState(false);
+
   const currentPage = parseInt(searchParams.get("page")) || 1;
 
-  // Sync local inputs when URL params change externally (nav clicks, back button)
   useEffect(() => {
     setSearchInput(searchParams.get("search") || "");
     setSortBy(searchParams.get("sort") || "newest");
@@ -58,7 +53,6 @@ const Products = () => {
     );
   }, [searchParams]);
 
-  // Fetch from backend whenever URL params change
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -71,7 +65,6 @@ const Products = () => {
       if (!res.ok) throw new Error("Failed to fetch products");
       const data = await res.json();
 
-      // Handle both paginated response and legacy array response
       if (Array.isArray(data)) {
         setProducts(data);
         setTotal(data.length);
@@ -93,16 +86,16 @@ const Products = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [fetchProducts]);
 
-  // Apply sidebar filters → update URL params → triggers fetch
   const applyFilters = () => {
     const params = new URLSearchParams();
-    if (searchInput.trim())    params.set("search", searchInput.trim());
-    if (selectedCategory)      params.set("category", selectedCategory);
-    if (sortBy !== "newest")   params.set("sort", sortBy);
-    if (minPrice > 0)          params.set("minPrice", minPrice);
-    if (maxPrice < 50000)      params.set("maxPrice", maxPrice);
+    if (searchInput.trim())  params.set("search", searchInput.trim());
+    if (selectedCategory)    params.set("category", selectedCategory);
+    if (sortBy !== "newest") params.set("sort", sortBy);
+    if (minPrice > 0)        params.set("minPrice", minPrice);
+    if (maxPrice < 50000)    params.set("maxPrice", maxPrice);
     params.set("page", "1");
     setSearchParams(params);
+    setShowFilters(false);
   };
 
   const resetFilters = () => {
@@ -112,9 +105,9 @@ const Products = () => {
     setMaxPrice(50000);
     setSelectedCategory(null);
     setSearchParams({});
+    setShowFilters(false);
   };
 
-  // Category immediate-apply (no need to click Apply)
   const handleCategorySelect = (catId) => {
     setSelectedCategory(catId);
     const params = new URLSearchParams(searchParams);
@@ -124,7 +117,6 @@ const Products = () => {
     setSearchParams(params);
   };
 
-  // Sort immediate-apply
   const handleSortChange = (value) => {
     setSortBy(value);
     const params = new URLSearchParams(searchParams);
@@ -132,6 +124,7 @@ const Products = () => {
     else params.delete("sort");
     params.set("page", "1");
     setSearchParams(params);
+    setShowSortMenu(false);
   };
 
   const goToPage = (page) => {
@@ -140,13 +133,18 @@ const Products = () => {
     setSearchParams(params);
   };
 
-  const isMobile = useIsMobile();
-
   const hasActiveFilters =
     searchParams.get("search") ||
     searchParams.get("category") ||
     searchParams.get("minPrice") ||
     searchParams.get("maxPrice");
+
+  const activeFilterCount =
+    (searchParams.get("search") ? 1 : 0) +
+    (searchParams.get("category") ? 1 : 0) +
+    (searchParams.get("minPrice") || searchParams.get("maxPrice") ? 1 : 0);
+
+  const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label || "Newest First";
 
   if (loading) {
     return (
@@ -184,18 +182,58 @@ const Products = () => {
           </div>
         )}
 
-        <div className="products-container">
-          {/* Sidebar */}
-          <aside className="products-sidebar">
-            {/* Category */}
+        {/* ── Mobile filter bar ── */}
+        <div className="mobile-filter-bar">
+          <button
+            className={`mob-filter-btn${showFilters ? " active" : ""}${activeFilterCount > 0 ? " has-badge" : ""}`}
+            onClick={() => { setShowFilters(v => !v); setShowSortMenu(false); }}
+          >
+            <IcoFilter />
+            Filters
+            {activeFilterCount > 0 && <span className="mob-filter-badge">{activeFilterCount}</span>}
+            <span className={`mob-chevron${showFilters ? " up" : ""}`}><IcoChevron /></span>
+          </button>
+
+          <div className="mob-sort-wrap">
+            <button
+              className={`mob-filter-btn${showSortMenu ? " active" : ""}`}
+              onClick={() => { setShowSortMenu(v => !v); setShowFilters(false); }}
+            >
+              <IcoSort />
+              <span className="mob-sort-label">{currentSortLabel}</span>
+              <span className={`mob-chevron${showSortMenu ? " up" : ""}`}><IcoChevron /></span>
+            </button>
+            {showSortMenu && (
+              <div className="mob-sort-dropdown">
+                {SORT_OPTIONS.map(o => (
+                  <button
+                    key={o.value}
+                    className={`mob-sort-option${sortBy === o.value ? " selected" : ""}`}
+                    onClick={() => handleSortChange(o.value)}
+                  >
+                    {o.label}
+                    {sortBy === o.value && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {hasActiveFilters && (
+            <button className="mob-clear-btn" onClick={resetFilters}>
+              <IcoX /> Clear
+            </button>
+          )}
+        </div>
+
+        {/* ── Mobile filter panel ── */}
+        {showFilters && (
+          <div className="mobile-filter-panel">
             <CategorySidebar
               selectedCategory={selectedCategory}
-              onCategorySelect={handleCategorySelect}
+              onCategorySelect={(catId) => { setSelectedCategory(catId); }}
             />
 
-            <div className="filter-divider" />
-
-            {/* Search */}
             <div className="filter-section">
               <h3>Search</h3>
               <input
@@ -208,7 +246,61 @@ const Products = () => {
               />
             </div>
 
-            {/* Sort */}
+            <div className="filter-section">
+              <h3>Price Range</h3>
+              <div className="price-filter">
+                <label>Min: ₹{minPrice.toLocaleString("en-IN")}</label>
+                <input
+                  type="range" min="0" max="50000" step="500"
+                  value={minPrice}
+                  onChange={(e) => { const v = Number(e.target.value); if (v <= maxPrice) setMinPrice(v); }}
+                  className="price-slider"
+                />
+              </div>
+              <div className="price-filter">
+                <label>Max: ₹{maxPrice.toLocaleString("en-IN")}</label>
+                <input
+                  type="range" min="0" max="50000" step="500"
+                  value={maxPrice}
+                  onChange={(e) => { const v = Number(e.target.value); if (v >= minPrice) setMaxPrice(v); }}
+                  className="price-slider"
+                />
+              </div>
+            </div>
+
+            <div className="mobile-filter-actions">
+              <button onClick={resetFilters} className="reset-filters-btn reset-filters-btn--outline">
+                Clear All
+              </button>
+              <button onClick={applyFilters} className="reset-filters-btn">
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="products-container">
+          {/* Sidebar — desktop only */}
+          <aside className="products-sidebar">
+            <CategorySidebar
+              selectedCategory={selectedCategory}
+              onCategorySelect={handleCategorySelect}
+            />
+
+            <div className="filter-divider" />
+
+            <div className="filter-section">
+              <h3>Search</h3>
+              <input
+                type="text"
+                placeholder="Search sarees..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && applyFilters()}
+                className="search-input"
+              />
+            </div>
+
             <div className="filter-section">
               <h3>Sort By</h3>
               <select
@@ -222,36 +314,23 @@ const Products = () => {
               </select>
             </div>
 
-            {/* Price */}
             <div className="filter-section">
               <h3>Price Range</h3>
               <div className="price-filter">
                 <label>Min: ₹{minPrice.toLocaleString("en-IN")}</label>
                 <input
-                  type="range"
-                  min="0"
-                  max="50000"
-                  step="500"
+                  type="range" min="0" max="50000" step="500"
                   value={minPrice}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    if (v <= maxPrice) setMinPrice(v);
-                  }}
+                  onChange={(e) => { const v = Number(e.target.value); if (v <= maxPrice) setMinPrice(v); }}
                   className="price-slider"
                 />
               </div>
               <div className="price-filter">
                 <label>Max: ₹{maxPrice.toLocaleString("en-IN")}</label>
                 <input
-                  type="range"
-                  min="0"
-                  max="50000"
-                  step="500"
+                  type="range" min="0" max="50000" step="500"
                   value={maxPrice}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    if (v >= minPrice) setMaxPrice(v);
-                  }}
+                  onChange={(e) => { const v = Number(e.target.value); if (v >= minPrice) setMaxPrice(v); }}
                   className="price-slider"
                 />
               </div>
@@ -272,7 +351,9 @@ const Products = () => {
           <main className="products-main">
             {products.length === 0 ? (
               <div className="no-results">
-                <span className="no-results-emoji">🔍</span>
+                <span className="no-results-emoji">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{opacity:0.4}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
                 <p>No sarees found matching your filters.</p>
                 <button onClick={resetFilters} className="reset-btn">
                   Clear Filters
@@ -280,15 +361,11 @@ const Products = () => {
               </div>
             ) : (
               <>
-                {isMobile ? (
-                  <ProductReel products={products} />
-                ) : (
-                  <div className="products-grid">
-                    {products.map((product) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
-                )}
+                <div className="products-grid">
+                  {products.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
 
                 {/* Pagination */}
                 {totalPages > 1 && (
@@ -304,9 +381,7 @@ const Products = () => {
                     <div className="page-numbers">
                       {Array.from({ length: totalPages }, (_, i) => i + 1)
                         .filter((p) =>
-                          p === 1 ||
-                          p === totalPages ||
-                          Math.abs(p - currentPage) <= 2
+                          p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2
                         )
                         .reduce((acc, p, idx, arr) => {
                           if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");

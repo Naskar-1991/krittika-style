@@ -9,6 +9,71 @@ import ReviewForm from "../components/ReviewForm";
 import ReviewsList from "../components/ReviewsList";
 import RatingSummary from "../components/RatingSummary";
 
+/* ── Inline SVG icons ── */
+const IconHeart = ({ filled }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24"
+    fill={filled ? "#ef4444" : "none"}
+    stroke={filled ? "#ef4444" : "currentColor"}
+    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+  </svg>
+);
+
+const IconStar = ({ filled }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24"
+    fill={filled ? "#fbbf24" : "none"}
+    stroke={filled ? "#fbbf24" : "#d1d5db"}
+    strokeWidth="1.5">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+);
+
+const IconCart = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <path d="M16 10a4 4 0 0 1-8 0"/>
+  </svg>
+);
+
+const IconTruck = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="3" width="15" height="13"/>
+    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+    <circle cx="5.5" cy="18.5" r="2.5"/>
+    <circle cx="18.5" cy="18.5" r="2.5"/>
+  </svg>
+);
+
+const IconLock = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+);
+
+const IconRefresh = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 4 23 10 17 10"/>
+    <polyline points="1 20 1 14 7 14"/>
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+  </svg>
+);
+
+const IconPackage = () => (
+  <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.2 }}>
+    <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/>
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+    <line x1="12" y1="22.08" x2="12" y2="12"/>
+  </svg>
+);
+
 function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -171,7 +236,7 @@ function ProductDetails() {
                 <img src={currentImage} alt={product.name} />
               ) : (
                 <div className="image-placeholder">
-                  <span>📦</span>
+                  <IconPackage />
                 </div>
               )}
               {product.stock === 0 && (
@@ -186,8 +251,9 @@ function ProductDetails() {
                 }}
                 className={`wishlist-icon-btn ${isInWishlist(product.id) ? "in-wishlist" : ""}`}
                 title={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+                aria-label={isInWishlist(product.id) ? "Remove from wishlist" : "Add to wishlist"}
               >
-                {isInWishlist(product.id) ? "❤️" : "🤍"}
+                <IconHeart filled={isInWishlist(product.id)} />
               </button>
             </div>
 
@@ -217,9 +283,7 @@ function ProductDetails() {
                   {Array(5)
                     .fill(0)
                     .map((_, i) => (
-                      <span key={i}>
-                        {i < Math.round(ratingStats.average_rating) ? "⭐" : "☆"}
-                      </span>
+                      <IconStar key={i} filled={i < Math.round(ratingStats.average_rating)} />
                     ))}
                 </span>
                 <span className="rating-text">
@@ -287,13 +351,13 @@ function ProductDetails() {
                 disabled={product.stock === 0}
                 className={`btn-add-to-cart ${product.stock === 0 ? "disabled" : ""}`}
               >
-                🛒 Add to Cart
+                <IconCart /> Add to Cart
               </button>
               <button 
                 onClick={handleWishlistToggle}
                 className={`btn-wishlist ${isInWishlist(product.id) ? "in-wishlist" : ""}`}
               >
-                {isInWishlist(product.id) ? "❤️" : "🤍"} 
+                <IconHeart filled={isInWishlist(product.id)} />
                 {isInWishlist(product.id) ? "Remove from Wishlist" : "Add to Wishlist"}
               </button>
               {wishlistMessage && (
@@ -304,15 +368,15 @@ function ProductDetails() {
             {/* Shipping Info */}
             <div className="shipping-info">
               <div className="info-item">
-                <span className="icon">🚚</span>
+                <span className="icon"><IconTruck /></span>
                 <span>Free shipping on orders above ₹500</span>
               </div>
               <div className="info-item">
-                <span className="icon">🔒</span>
+                <span className="icon"><IconLock /></span>
                 <span>Secure and encrypted payments</span>
               </div>
               <div className="info-item">
-                <span className="icon">↩️</span>
+                <span className="icon"><IconRefresh /></span>
                 <span>Easy returns within 30 days</span>
               </div>
             </div>

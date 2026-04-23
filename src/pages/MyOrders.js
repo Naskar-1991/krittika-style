@@ -7,6 +7,17 @@ import TrackOrderModal from "../components/TrackOrderModal";
 import "./MyOrders.css";
 import API_URL from "../api_connection/BackendAPIConnection";
 
+/* ── Order status icon components ── */
+const IcoBox       = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>;
+const IcoTruck     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>;
+const IcoCheck     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+const IcoX         = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IcoCog       = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>;
+const IcoRefresh   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>;
+const IcoWarn      = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+const IcoEye       = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
+const IcoPin       = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+
 function MyOrders() {
   const { user } = useContext(AuthContext);
   const { checkCanReturn } = useContext(ReturnsContext);
@@ -127,46 +138,29 @@ function MyOrders() {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "pending":
-        return "⏳";
-      case "processing":
-        return "⚙️";
-      case "shipped":
-        return "🚚";
-      case "delivered":
-        return "✅";
-      case "cancelled":
-        return "❌";
-      default:
-        return "📦";
+      case "pending":    return <IcoBox />;
+      case "processing": return <IcoCog />;
+      case "shipped":    return <IcoTruck />;
+      case "delivered":  return <IcoCheck />;
+      case "cancelled":  return <IcoX />;
+      default:           return <IcoBox />;
     }
   };
 
   const getShiprocketStatusIcon = (status) => {
-    if (!status) return "📦";
+    if (!status) return <IcoBox />;
     switch (status.toLowerCase()) {
-      case "pickup_pending":
-        return "📍";
-      case "pickup_done":
-        return "📦";
-      case "ready_to_ship":
-        return "🔄";
-      case "in_transit":
-        return "🚛";
-      case "out_for_delivery":
-        return "🚚";
-      case "delivered":
-        return "✅";
-      case "cancelled":
-        return "❌";
-      case "lost_in_transit":
-        return "⚠️";
-      case "rto_initiated":
-        return "↩️";
-      case "rto_delivered":
-        return "↩️✅";
-      default:
-        return "🚚";
+      case "pickup_pending":  return <IcoBox />;
+      case "pickup_done":     return <IcoBox />;
+      case "ready_to_ship":   return <IcoRefresh />;
+      case "in_transit":      return <IcoTruck />;
+      case "out_for_delivery":return <IcoTruck />;
+      case "delivered":       return <IcoCheck />;
+      case "cancelled":       return <IcoX />;
+      case "lost_in_transit": return <IcoWarn />;
+      case "rto_initiated":   return <IcoRefresh />;
+      case "rto_delivered":   return <IcoCheck />;
+      default:                return <IcoTruck />;
     }
   };
 
@@ -206,20 +200,20 @@ function MyOrders() {
     <div className="my-orders-page">
       <div className="container">
         <div className="orders-header">
-          <h1>📦 My Orders</h1>
+          <h1>My Orders</h1>
           <p className="orders-count">You have {orders.length} order(s)</p>
         </div>
 
         {error && (
           <div className="error-banner">
-            <span>⚠️ {error}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><IcoWarn /> {error}</span>
             <button onClick={fetchOrders} className="retry-btn">Retry</button>
           </div>
         )}
 
         {orders.length === 0 ? (
           <div className="no-orders">
-            <span className="no-orders-emoji">📭</span>
+            <span className="no-orders-emoji" style={{ display: "flex", justifyContent: "center", color: "var(--text-light)" }}><IcoBox /></span>
             <h2>No Orders Yet</h2>
             <p>You haven't placed any orders yet.</p>
             <a href="/products" className="btn-shop-now">
@@ -259,7 +253,7 @@ function MyOrders() {
                   <div className="order-tracking-section">
                     <div className="tracking-header">
                       <div className="tracking-info">
-                        <h3>📍 Tracking Information</h3>
+                        <h3><IcoPin /> Tracking Information</h3>
                         <div className="tracking-details">
                           <div className="tracking-item">
                             <span className="tracking-label">Tracking Number:</span>
@@ -320,7 +314,7 @@ function MyOrders() {
                                 </div>
                                 {history.location && (
                                   <div className="event-location">
-                                    📍 {history.location}
+                                    <IcoPin /> {history.location}
                                   </div>
                                 )}
                                 {history.timestamp && (
@@ -339,7 +333,7 @@ function MyOrders() {
                     {order.tracking_url && (
                       <div className="tracking-url-section">
                         <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="btn-track-external">
-                          🌐 Track on Shiprocket
+                          Track on Shiprocket →
                         </a>
                       </div>
                     )}
@@ -380,7 +374,7 @@ function MyOrders() {
                             className="view-product-btn"
                             title="View Product Details"
                           >
-                            👁️ View
+                            <IcoEye /> View
                           </Link>
                         </div>
                       ))
@@ -402,7 +396,7 @@ function MyOrders() {
                         onClick={() => setReturnModal(order)}
                         title="Request a return"
                       >
-                        🔄 Request Return
+                        <IcoRefresh /> Request Return
                       </button>
                     )}
                     {order.status !== "cancelled" && (
@@ -411,7 +405,7 @@ function MyOrders() {
                         onClick={() => setTrackModal(order)}
                         title="Track your order"
                       >
-                        📍 {order.tracking_number ? "Track Shipment" : "Track Order"}
+                        <IcoPin /> {order.tracking_number ? "Track Shipment" : "Track Order"}
                       </button>
                     )}
                     {order.status !== "cancelled" && order.status !== "delivered" && (
@@ -421,7 +415,7 @@ function MyOrders() {
                         disabled={order.status === "shipped"}
                         title={order.status === "shipped" ? "Order already shipped — cannot cancel" : "Cancel this order"}
                       >
-                        ✕ Cancel Order
+                        <IcoX /> Cancel Order
                       </button>
                     )}
                   </div>
@@ -465,7 +459,7 @@ function MyOrders() {
               <h2>Cancel Order</h2>
             </div>
             <div className="cancel-modal-body">
-              <div className="cancel-warning-icon">⚠️</div>
+              <div className="cancel-warning-icon"><IcoWarn /></div>
               <p className="cancel-confirm-text">
                 Are you sure you want to cancel <strong>Order #{cancelModal.id}</strong>?
               </p>
@@ -477,7 +471,7 @@ function MyOrders() {
               </p>
               {cancelError && (
                 <div className={cancelError.includes("locally") ? "cancel-warning" : "cancel-error"}>
-                  {cancelError.includes("locally") ? "⚠️" : "❌"} {cancelError}
+                  {cancelError.includes("locally") ? <IcoWarn /> : <IcoX />} {cancelError}
                 </div>
               )}
             </div>

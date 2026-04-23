@@ -2,13 +2,26 @@ import React, { useState, useEffect, useCallback } from "react";
 import "./TrackOrderModal.css";
 import API_URL from "../api_connection/BackendAPIConnection";
 
+const s = { fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round" };
+const IcoClipboard = () => <svg width="14" height="14" viewBox="0 0 24 24" {...s}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>;
+const IcoCog       = () => <svg width="14" height="14" viewBox="0 0 24 24" {...s}><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>;
+const IcoBox       = () => <svg width="14" height="14" viewBox="0 0 24 24" {...s}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>;
+const IcoTruck     = () => <svg width="14" height="14" viewBox="0 0 24 24" {...s}><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>;
+const IcoCheckCircle = () => <svg width="14" height="14" viewBox="0 0 24 24" {...s}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
+const IcoCheck     = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+const IcoX         = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IcoXClose    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IcoWarn      = () => <svg width="14" height="14" viewBox="0 0 24 24" {...s}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+const IcoPin       = () => <svg width="14" height="14" viewBox="0 0 24 24" {...s}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+const IcoGlobe     = () => <svg width="14" height="14" viewBox="0 0 24 24" {...s}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+
 const ORDER_STEPS = [
-  { key: "pending", label: "Order Placed", icon: "📋" },
-  { key: "processing", label: "Processing", icon: "⚙️" },
-  { key: "shipped", label: "Shipped", icon: "📦" },
-  { key: "in_transit", label: "In Transit", icon: "🚛" },
-  { key: "out_for_delivery", label: "Out for Delivery", icon: "🚚" },
-  { key: "delivered", label: "Delivered", icon: "✅" },
+  { key: "pending",          label: "Order Placed",      icon: <IcoClipboard /> },
+  { key: "processing",       label: "Processing",        icon: <IcoCog /> },
+  { key: "shipped",          label: "Shipped",           icon: <IcoBox /> },
+  { key: "in_transit",       label: "In Transit",        icon: <IcoTruck /> },
+  { key: "out_for_delivery", label: "Out for Delivery",  icon: <IcoTruck /> },
+  { key: "delivered",        label: "Delivered",         icon: <IcoCheckCircle /> },
 ];
 
 const STATUS_STEP_MAP = {
@@ -105,7 +118,7 @@ function TrackOrderModal({ order, onClose }) {
             <span className="track-order-id">Order #{order.id}</span>
           </div>
           <button className="track-close-btn" onClick={onClose} aria-label="Close">
-            ✕
+            <IcoXClose />
           </button>
         </div>
 
@@ -119,7 +132,7 @@ function TrackOrderModal({ order, onClose }) {
 
           {error && !loading && (
             <div className="track-error">
-              <span>⚠️ {error}</span>
+              <span><IcoWarn /> {error}</span>
               <button className="track-retry-btn" onClick={fetchTracking}>
                 Retry
               </button>
@@ -140,7 +153,7 @@ function TrackOrderModal({ order, onClose }) {
                       className={`track-step ${done ? "done" : ""} ${active && !cancelled ? "active" : ""} ${cancelled && idx === 0 ? "cancelled" : ""}`}
                     >
                       <div className="step-circle">
-                        {done ? "✓" : cancelled && idx === 0 ? "✕" : step.icon}
+                        {done ? <IcoCheck /> : cancelled && idx === 0 ? <IcoX /> : step.icon}
                       </div>
                       <span className="step-label">{step.label}</span>
                       {idx < ORDER_STEPS.length - 1 && (
@@ -202,7 +215,7 @@ function TrackOrderModal({ order, onClose }) {
                   </>
                 ) : (
                   <div className="track-no-tracking">
-                    <span className="no-track-icon">📍</span>
+                    <span className="no-track-icon"><IcoPin /></span>
                     <p>
                       <strong>Tracking not yet available</strong>
                     </p>
@@ -228,7 +241,7 @@ function TrackOrderModal({ order, onClose }) {
                             {act.activity || act.status}
                           </div>
                           {act.location && (
-                            <div className="timeline-location">📍 {act.location}</div>
+                            <div className="timeline-location"><IcoPin /> {act.location}</div>
                           )}
                           <div className="timeline-date">{formatDateTime(act.date)}</div>
                         </div>
@@ -250,7 +263,7 @@ function TrackOrderModal({ order, onClose }) {
                     rel="noopener noreferrer"
                     className="btn-track-external"
                   >
-                    🌐 Track on Shiprocket Website
+                    <IcoGlobe /> Track on Shiprocket Website
                   </a>
                 </div>
               )}

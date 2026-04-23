@@ -37,9 +37,15 @@
 }
 
 .otp-icon {
-  font-size: 48px;
-  margin-bottom: 15px;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(102,126,234,0.12) 0%, rgba(118,75,162,0.12) 100%);
+  margin: 0 auto 15px;
+  color: #667eea;
 }
 
 .otp-header h2 {
@@ -63,6 +69,9 @@
 
 /* Messages */
 .otp-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background-color: #fee;
   color: #c33;
   padding: 12px;
@@ -74,6 +83,9 @@
 }
 
 .otp-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background-color: #efe;
   color: #3c3;
   padding: 12px;
@@ -159,10 +171,16 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   margin-bottom: 20px;
   font-size: 14px;
   color: #666;
+}
+
+.otp-timer span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .otp-timer span.warning {

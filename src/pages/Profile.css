@@ -25,7 +25,12 @@
   margin: 0 0 10px 0;
   font-weight: 700;
   letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
+
+.profile-header h1 svg { flex-shrink: 0; width: 28px; height: 28px; }
 
 .profile-header p {
   color: rgba(255, 255, 255, 0.9);
@@ -80,6 +85,9 @@
 }
 
 .error-banner span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   color: #7f1d1d;
   font-weight: 500;
 }
@@ -90,6 +98,9 @@
 }
 
 .success-banner span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   color: #166534;
   font-weight: 500;
 }
@@ -129,6 +140,9 @@
 }
 
 .tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: white;
   border: none;
   padding: 14px 18px;
@@ -199,6 +213,9 @@
 
 /* Edit Button */
 .edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
@@ -247,7 +264,10 @@
 }
 
 .phone-icon {
-  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  color: #667eea;
 }
 
 .not-set {
@@ -313,6 +333,9 @@
 }
 
 .error-message {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   background: #fee2e2;
   color: #7f1d1d;
   padding: 12px 14px;
@@ -333,6 +356,10 @@
 .btn-cancel,
 .btn-logout,
 .btn-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   padding: 12px 20px;
   border-radius: 6px;
   border: none;
@@ -411,8 +438,15 @@
 }
 
 .activity-icon {
-  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #ede9fe;
+  border-radius: 8px;
   flex-shrink: 0;
+  color: #667eea;
 }
 
 .activity-details {

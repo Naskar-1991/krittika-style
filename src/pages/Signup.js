@@ -4,6 +4,19 @@ import "./Signup.css";
 import OTPVerification from "../components/OTPVerification";
 import API_URL from "../api_connection/BackendAPIConnection";
 
+const IconWarning = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+);
+const IconCheck = () => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+    <polyline points="22 4 12 14.01 9 11.01"/>
+  </svg>
+);
+
 const Signup = () => {
   const [step, setStep] = useState("form"); // 'form', 'otp', 'success'
   const [form, setForm] = useState({ 
@@ -163,8 +176,8 @@ const Signup = () => {
         <div className="auth-card">
           {/* Logo */}
           <div className="auth-logo">
-            <span className="logo-icon">🛍️</span>
-            <h1>KrittikaStyle</h1>
+            <span className="auth-logo-mark" aria-hidden="true">K</span>
+            <h1>Krittika Style</h1>
           </div>
 
           {step === "form" && (
@@ -172,7 +185,7 @@ const Signup = () => {
               <h2>Create Your Account</h2>
               <p className="auth-subtitle">Join millions of happy shoppers</p>
 
-              {error && <div className="error-message">⚠️ {error}</div>}
+              {error && <div className="error-message"><IconWarning /> {error}</div>}
 
               <form onSubmit={handleInitiateSignup} className="auth-form">
                 <div className="form-group">
@@ -272,10 +285,10 @@ const Signup = () => {
 
           {step === "success" && (
             <div className="success-message">
-              <div className="success-icon">✅</div>
-              <h2>Account Created Successfully!</h2>
+              <div className="success-icon success-icon-svg"><IconCheck /></div>
+              <h2>Account Created!</h2>
               <p>Your mobile number has been verified</p>
-              <p className="success-redirect">Redirecting to home page...</p>
+              <p className="success-redirect">Redirecting to home page…</p>
             </div>
           )}
         </div>
@@ -283,14 +296,37 @@ const Signup = () => {
         {/* Right side illustration */}
         <div className="auth-illustration">
           <div className="illustration-content">
-            <span className="illustration-emoji">📦</span>
-            <h3>Welcome to KrittikaStyle</h3>
-            <p>Shop millions of products with secure checkout</p>
+            <svg className="auth-motif" viewBox="0 0 280 280" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="sg1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#9B90F5" stopOpacity="0.55"/>
+                  <stop offset="100%" stopColor="#667eea" stopOpacity="0.25"/>
+                </linearGradient>
+              </defs>
+              <circle cx="140" cy="140" r="110" stroke="rgba(155,144,245,0.18)" strokeWidth="1"/>
+              <circle cx="140" cy="140" r="80"  stroke="rgba(155,144,245,0.22)" strokeWidth="1"/>
+              <circle cx="140" cy="140" r="50"  stroke="rgba(155,144,245,0.28)" strokeWidth="1.2"/>
+              <path d="M140 30L250 140L140 250L30 140Z" stroke="url(#sg1)" strokeWidth="1.2" fill="none"/>
+              <path d="M140 70L210 140L140 210L70 140Z" stroke="rgba(155,144,245,0.4)" strokeWidth="1" fill="none"/>
+              <line x1="140" y1="30" x2="140" y2="70" stroke="rgba(155,144,245,0.3)" strokeWidth="0.8"/>
+              <line x1="250" y1="140" x2="210" y2="140" stroke="rgba(155,144,245,0.3)" strokeWidth="0.8"/>
+              <line x1="140" y1="250" x2="140" y2="210" stroke="rgba(155,144,245,0.3)" strokeWidth="0.8"/>
+              <line x1="30"  y1="140" x2="70"  y2="140" stroke="rgba(155,144,245,0.3)" strokeWidth="0.8"/>
+              <circle cx="140" cy="30"  r="3.5" fill="#9B90F5" fillOpacity="0.8"/>
+              <circle cx="250" cy="140" r="3.5" fill="#9B90F5" fillOpacity="0.8"/>
+              <circle cx="140" cy="250" r="3.5" fill="#9B90F5" fillOpacity="0.8"/>
+              <circle cx="30"  cy="140" r="3.5" fill="#9B90F5" fillOpacity="0.8"/>
+              <circle cx="140" cy="140" r="18" fill="none" stroke="rgba(155,144,245,0.5)" strokeWidth="1.2"/>
+              <circle cx="140" cy="140" r="8"  fill="rgba(102,126,234,0.25)"/>
+              <circle cx="140" cy="140" r="3.5" fill="rgba(155,144,245,0.95)"/>
+            </svg>
+            <h3>Join Krittika Style</h3>
+            <p>Discover handwoven sarees from India's finest weavers</p>
             <div className="illustration-features">
-              <div className="feature">✓ Fast Shipping</div>
-              <div className="feature">✓ Secure Payments</div>
-              <div className="feature">✓ Easy Returns</div>
-              <div className="feature">✓ 24/7 Support</div>
+              <div className="feature"><span className="feature-check">✓</span> Direct from Weavers</div>
+              <div className="feature"><span className="feature-check">✓</span> Secure OTP Verification</div>
+              <div className="feature"><span className="feature-check">✓</span> Easy Returns</div>
+              <div className="feature"><span className="feature-check">✓</span> Pan-India Delivery</div>
             </div>
           </div>
         </div>

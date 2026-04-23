@@ -256,6 +256,14 @@ textarea::placeholder {
   width: 100%;
 }
 
+@media (max-width: 768px) {
+  .container { padding: 0 16px; }
+}
+
+@media (max-width: 480px) {
+  .container { padding: 0 14px; }
+}
+
 /* Utility Classes */
 .text-center {
   text-align: center;

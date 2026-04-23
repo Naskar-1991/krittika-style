@@ -274,7 +274,9 @@
 }
 
 .product-rating-section .stars {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .product-rating-section .rating-text {
@@ -406,10 +408,14 @@
   padding: 16px 24px;
   border: none;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .btn-add-to-cart {
@@ -492,7 +498,10 @@
 }
 
 .info-item .icon {
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  color: var(--primary);
+  flex-shrink: 0;
 }
 
 /* Tabs Section */

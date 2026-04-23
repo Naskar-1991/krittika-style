@@ -137,11 +137,17 @@
 }
 
 .feature-icon {
-  font-size: 28px;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
   z-index: 1;
-  transition: filter 0.25s ease;
+  color: var(--primary);
+  transition: color 0.25s ease;
+}
+
+.feature-card:hover .feature-icon {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .feature-card h3 {
@@ -297,25 +303,27 @@
 }
 
 @media (max-width: 768px) {
-  .stats-section { padding: 40px 0; }
-  .features-section { padding: 64px 0; }
-  .section-title { font-size: 28px; margin-bottom: 40px; }
-  .features-grid { grid-template-columns: 1fr; gap: 16px; }
-  .feature-card { padding: 28px 22px; }
-  .cta-section { padding: 64px 0; }
-  .cta-content h2 { font-size: 28px; }
+  .stats-section { padding: 32px 0; }
+  .features-section { padding: 48px 0; }
+  .section-title { font-size: 24px; margin-bottom: 32px; }
+  .features-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .feature-card { padding: 22px 16px; }
+  .cta-section { padding: 48px 0; }
+  .cta-content h2 { font-size: 26px; }
 }
 
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .stat-item::after { display: none !important; }
-  .stat-item { padding: 20px 10px; }
-  .features-section { padding: 48px 0; }
-  .section-title { font-size: 22px; }
-  .feature-card { padding: 22px 16px; }
-  .feature-icon-wrap { width: 52px; height: 52px; }
-  .feature-icon { font-size: 24px; }
-  .cta-section { padding: 48px 0; }
-  .cta-content h2 { font-size: 22px; }
-  .btn-light { width: 100%; text-align: center; }
+  .stat-item { padding: 16px 8px; }
+  .features-section { padding: 40px 0; }
+  .section-title { font-size: 20px; }
+  .features-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .feature-card { padding: 18px 12px; gap: 10px; }
+  .feature-icon-wrap { width: 44px; height: 44px; }
+  .feature-card-title { font-size: 12px; }
+  .feature-card-desc { font-size: 11px; }
+  .cta-section { padding: 40px 0; }
+  .cta-content h2 { font-size: 20px; }
+  .btn-light { width: 100%; text-align: center; justify-content: center; }
 }

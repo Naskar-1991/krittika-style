@@ -6,6 +6,37 @@ import { AuthContext } from "../context/AuthContext";
 import "./Wishlist.css";
 import API_URL from "../api_connection/BackendAPIConnection";
 
+const IconHeartFilled = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+  </svg>
+);
+const IconBag = () => (
+  <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3, color: "var(--primary)" }}>
+    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <path d="M16 10a4 4 0 0 1-8 0"/>
+  </svg>
+);
+const IconCart = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <path d="M16 10a4 4 0 0 1-8 0"/>
+  </svg>
+);
+const IconEye = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
+const IconX = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+);
+
 const Wishlist = () => {
   const { wishlist, loading, removeFromWishlist } = useContext(WishlistContext);
   const { addToCart } = useContext(CartContext);
@@ -78,7 +109,7 @@ const Wishlist = () => {
   return (
     <div className="wishlist-container">
       <div className="wishlist-header">
-        <h1>❤️ My Wishlist</h1>
+        <h1 style={{ display: "flex", alignItems: "center", gap: "12px", justifyContent: "center" }}><IconHeartFilled /> My Wishlist</h1>
         <p className="wishlist-count">
           {wishlist.length} {wishlist.length === 1 ? "item" : "items"}
         </p>
@@ -87,7 +118,7 @@ const Wishlist = () => {
 
       {wishlist.length === 0 ? (
         <div className="empty-wishlist">
-          <p className="empty-icon">🛍️</p>
+          <p className="empty-icon"><IconBag /></p>
           <p className="empty-text">Your wishlist is empty</p>
           <p className="empty-subtext">
             Start adding your favorite products to your wishlist!
@@ -121,14 +152,15 @@ const Wishlist = () => {
                         }}
                       />
                     ) : (
-                      <div className="no-image">📦 No Image Available</div>
+                      <div className="no-image">No Image</div>
                     )}
                     <button
                       className="remove-btn"
                       onClick={() => handleRemoveFromWishlist(item.product_id)}
                       title="Remove from wishlist"
+                      aria-label="Remove from wishlist"
                     >
-                      ❌
+                      <IconX />
                     </button>
                   </div>
 
@@ -157,13 +189,13 @@ const Wishlist = () => {
                         onClick={() => handleAddToCart(item)}
                         disabled={item.stock === 0}
                       >
-                        🛒 Add to Cart
+                        <IconCart /> Add to Cart
                       </button>
                       <button
                         className="view-details-btn"
                         onClick={() => navigate(`/product/${item.product_id}`)}
                       >
-                        👁️ View
+                        <IconEye /> View
                       </button>
                     </div>
 

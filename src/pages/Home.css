@@ -275,6 +275,17 @@
   line-height: 1;
 }
 
+.cat-svg-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.category-card:hover .cat-svg-icon {
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .category-name {
   font-family: 'Montserrat', sans-serif;
   font-size: 14px;
@@ -471,20 +482,20 @@
   .featured-section,
   .categories-showcase-section,
   .testimonials-section,
-  .category-products-section { padding: 64px 0; }
+  .category-products-section { padding: 48px 0; }
 
-  .section-header { margin-bottom: 40px; }
+  .section-header { margin-bottom: 32px; }
 
   .carousel-wrapper { padding: 0 44px; }
   .carousel-slide { flex: 0 0 calc(100% / 2); }
   .carousel-btn { width: 36px; height: 36px; font-size: 24px; }
 
-  .products-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .products-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
 
-  .categories-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
-  .category-card { padding: 22px 14px; }
-  .category-icon-wrap { width: 48px; height: 48px; font-size: 22px; margin-bottom: 10px; }
-  .category-name { font-size: 13px; }
+  .categories-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .category-card { padding: 18px 12px; }
+  .category-icon-wrap { width: 46px; height: 46px; margin-bottom: 10px; }
+  .category-name { font-size: 12px; }
 
   .testimonials-grid { grid-template-columns: 1fr; }
 }
@@ -492,22 +503,22 @@
 @media (max-width: 480px) {
   .featured-section,
   .categories-showcase-section,
-  .testimonials-section { padding: 48px 0; }
+  .testimonials-section { padding: 40px 0; }
 
-  .section-header { margin-bottom: 30px; }
+  .section-header { margin-bottom: 24px; }
 
-  .carousel-wrapper { padding: 0 38px; }
-  .carousel-slide { flex: 0 0 100%; }
+  .carousel-wrapper { padding: 0 36px; }
+  .carousel-slide { flex: 0 0 calc(100% / 2); }
 
-  .products-grid { grid-template-columns: 1fr; }
+  .products-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 
-  .categories-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  .category-card { padding: 18px 12px; }
-  .category-icon-wrap { width: 44px; height: 44px; font-size: 20px; }
-  .category-name { font-size: 12px; }
+  .categories-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .category-card { padding: 16px 10px; }
+  .category-icon-wrap { width: 42px; height: 42px; }
+  .category-name { font-size: 11px; }
 
-  .testimonial-card { padding: 24px 20px; }
-  .testimonial-text { font-size: 15px; }
+  .testimonial-card { padding: 20px 16px; }
+  .testimonial-text { font-size: 14px; }
 }
 
 /* ─── Reduced motion ─── */

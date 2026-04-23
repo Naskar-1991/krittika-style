@@ -59,7 +59,9 @@ const CategorySidebar = ({ selectedCategory, onCategorySelect }) => {
           onClick={() => setIsOpen(!isOpen)}
           disabled={loading}
         >
-          <span className="dropdown-icon">📁</span>
+          <span className="dropdown-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </span>
           <span className="dropdown-label">{getSelectedCategoryName()}</span>
           <span className={`dropdown-arrow ${isOpen ? "up" : "down"}`}>▼</span>
         </button>
@@ -74,7 +76,7 @@ const CategorySidebar = ({ selectedCategory, onCategorySelect }) => {
                   className={`dropdown-item ${!selectedCategory ? "active" : ""}`}
                   onClick={() => handleCategorySelect(null)}
                 >
-                  <span className="item-icon">✓</span>
+                  <span className="item-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
                   All Sarees
                 </button>
 
@@ -88,7 +90,7 @@ const CategorySidebar = ({ selectedCategory, onCategorySelect }) => {
                       onClick={() => handleCategorySelect(category.id)}
                       title={category.description}
                     >
-                      <span className="item-icon">✓</span>
+                      <span className="item-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
                       {category.name}
                     </button>
                   ))

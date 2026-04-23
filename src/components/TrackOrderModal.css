@@ -118,6 +118,12 @@
   gap: 12px;
 }
 
+.track-error span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
 .track-retry-btn {
   background: #c53030;
   color: #fff;
@@ -162,8 +168,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  font-weight: 700;
   position: relative;
   z-index: 1;
   transition: background 0.3s, color 0.3s;
@@ -173,7 +177,6 @@
 .track-step.done .step-circle {
   background: #48bb78;
   color: #fff;
-  font-size: 1.1rem;
 }
 
 .track-step.active .step-circle {
@@ -303,9 +306,10 @@
 }
 
 .no-track-icon {
-  font-size: 2.5rem;
-  display: block;
+  display: flex;
+  justify-content: center;
   margin-bottom: 10px;
+  color: #667eea;
 }
 
 .track-no-tracking p {
@@ -376,6 +380,9 @@
 }
 
 .timeline-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.82rem;
   color: #666;
   margin-bottom: 2px;
@@ -393,7 +400,9 @@
 }
 
 .btn-track-external {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 10px 24px;
   background: #fff;
   border: 2px solid #667eea;

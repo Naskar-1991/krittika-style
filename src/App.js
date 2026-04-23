@@ -6,6 +6,7 @@ import { ReturnsProvider } from "./context/ReturnsContext";
 import { AuthProvider } from "./context/AuthContext";
 
 import Layout from "./components/Layout";
+import LandingPage from "./pages/LandingPage";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
@@ -32,6 +33,9 @@ import AdminReviews from "./admin/AdminReviews";
 function AppContent() {
   return (
     <Routes>
+      {/* Landing page — no Layout wrapper, full-canvas */}
+      <Route path="/landing" element={<LandingPage />} />
+
       {/* Public Routes with Layout */}
       <Route
         path="/"

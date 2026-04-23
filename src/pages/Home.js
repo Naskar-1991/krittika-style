@@ -8,28 +8,100 @@ import { fetchCategories } from "../services/categoryService";
 import "./Home.css";
 import API_URL from "../api_connection/BackendAPIConnection";
 
-const CATEGORY_ICONS = {
-  "Silk":       "🥻",
-  "Cotton":     "🌿",
-  "Banarasi":   "✨",
-  "Kanjivaram": "🪡",
-  "Kanjeevaram":"🪡",
-  "Designer":   "💎",
-  "Bridal":     "👰",
-  "Handloom":   "🧵",
-  "Festive":    "🪔",
-  "Casual":     "☀️",
-  "Printed":    "🎨",
-  "Linen":      "🌾",
-  "Georgette":  "🌸",
-  "Chiffon":    "🌸",
-  "Tussar":     "🍂",
-  "Patola":     "🔷",
-  "Embroidered":"🪢",
-  "Zari":       "✦",
-  "Office":     "💼",
-  "Gifting":    "🎁",
-};
+/* ── Category SVG icons ── */
+const CatIconDiamond = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 3h12l4 6-10 13L2 9z"/><path d="M2 9h20M12 3l4 6-4 13-4-13z"/>
+  </svg>
+);
+const CatIconLeaf = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 8C8 10 5.9 16.17 3.82 19.11a1 1 0 0 0 1.41 1.41C8.17 18.1 14.4 16 16 8z"/>
+    <line x1="3" y1="21" x2="17" y2="8"/>
+  </svg>
+);
+const CatIconWeave = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10z"/>
+    <path d="M12 2c-4 4-4 16 0 20m0-20c4 4 4 16 0 20"/><path d="M2 12h20"/>
+  </svg>
+);
+const CatIconFlower = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M12 2a2.4 2.4 0 0 0 0 4.8 2.4 2.4 0 0 0 0-4.8z" transform="rotate(0 12 12)"/>
+    <path d="M12 17.2a2.4 2.4 0 0 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"/>
+    <path d="M2 12a2.4 2.4 0 0 0 4.8 0A2.4 2.4 0 0 0 2 12z"/>
+    <path d="M17.2 12a2.4 2.4 0 0 0 4.8 0 2.4 2.4 0 0 0-4.8 0z"/>
+  </svg>
+);
+const CatIconSparkle = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5z"/><line x1="12" y1="3" x2="12" y2="1"/><line x1="19" y1="10" x2="21" y2="10"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="5" y1="10" x2="3" y2="10"/>
+  </svg>
+);
+const CatIconSun = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5"/>
+    <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+    <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+  </svg>
+);
+const CatIconPalette = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
+    <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
+    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+  </svg>
+);
+const CatIconCrown = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7z"/><line x1="5" y1="20" x2="19" y2="20"/>
+  </svg>
+);
+const CatIconGift = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/>
+    <line x1="12" y1="22" x2="12" y2="7"/>
+    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+  </svg>
+);
+const CatIconBriefcase = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+  </svg>
+);
+const CatIconNeedle = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 2v10c0 3.31 2.69 6 6 6s6-2.69 6-6V2"/><line x1="6" y1="6" x2="18" y2="6"/>
+  </svg>
+);
+const CatIconFabric = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+  </svg>
+);
+
+function getCategoryIcon(name = "") {
+  const n = name.toLowerCase();
+  if (n.includes("silk") || n.includes("banarasi") || n.includes("kanjivaram") || n.includes("kanjeevaram") || n.includes("patola")) return <CatIconDiamond />;
+  if (n.includes("cotton") || n.includes("linen") || n.includes("tussar")) return <CatIconLeaf />;
+  if (n.includes("handloom") || n.includes("georgette") || n.includes("chiffon")) return <CatIconWeave />;
+  if (n.includes("bridal")) return <CatIconFlower />;
+  if (n.includes("festive") || n.includes("zari") || n.includes("embroidered")) return <CatIconSparkle />;
+  if (n.includes("casual")) return <CatIconSun />;
+  if (n.includes("printed")) return <CatIconPalette />;
+  if (n.includes("designer")) return <CatIconCrown />;
+  if (n.includes("gift")) return <CatIconGift />;
+  if (n.includes("office")) return <CatIconBriefcase />;
+  if (n.includes("needle") || n.includes("ikat") || n.includes("pochampally") || n.includes("bandhani") || n.includes("kalamkari")) return <CatIconNeedle />;
+  return <CatIconFabric />;
+}
 
 const SAREE_KEYWORDS = [
   "silk", "cotton", "saree", "sari", "banarasi", "banaras",
@@ -64,13 +136,6 @@ const TESTIMONIALS = [
 function isSareeCategory(name = "") {
   const lower = name.toLowerCase();
   return SAREE_KEYWORDS.some((kw) => lower.includes(kw));
-}
-
-function getCategoryIcon(name = "") {
-  const key = Object.keys(CATEGORY_ICONS).find((k) =>
-    name.toLowerCase().includes(k.toLowerCase())
-  );
-  return key ? CATEGORY_ICONS[key] : "🥻";
 }
 
 function useIsMobile(breakpoint = 768) {
@@ -254,7 +319,7 @@ function Home() {
                   style={{ animationDelay: `${i * 0.06}s` }}
                 >
                   <div className="category-icon-wrap">
-                    <span className="category-icon">{getCategoryIcon(category.name)}</span>
+                    <span className="category-icon cat-svg-icon">{getCategoryIcon(category.name)}</span>
                   </div>
                   <div className="category-name">{category.name}</div>
                   <div className="category-count">
