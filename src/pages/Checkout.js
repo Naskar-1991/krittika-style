@@ -16,6 +16,7 @@ const Checkout = () => {
   const [orderId, setOrderId] = useState(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [showTrackModal, setShowTrackModal] = useState(false);
+  const [showPaymentPicker, setShowPaymentPicker] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: user?.name?.split(" ")[0] || "",
@@ -97,12 +98,12 @@ const Checkout = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  // Step 1: validate form, create order, then show payment picker
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    // Validate form
     if (!formData.firstName || !formData.lastName || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.zipcode) {
       setError("Please fill in all required fields");
       setLoading(false);
@@ -113,13 +114,9 @@ const Checkout = () => {
       const token = localStorage.getItem("token");
       const totalAmount = parseFloat(getTotalPrice());
 
-      // Step 1: Create order in database
       const orderResponse = await fetch(`${API_URL}/api/orders`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({
           items: cart,
           totalAmount: totalAmount,
@@ -138,108 +135,97 @@ const Checkout = () => {
       });
 
       const orderData = await orderResponse.json();
+      if (!orderResponse.ok) throw new Error(orderData.error || "Failed to create order");
 
-      if (!orderResponse.ok) {
-        throw new Error(orderData.error || "Failed to create order");
-      }
+      setOrderId(orderData.order.id);
+      setLoading(false);
+      setShowPaymentPicker(true);
+    } catch (err) {
+      console.error("Order error:", err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
 
-      const createdOrderId = orderData.order.id;
-      setOrderId(createdOrderId);
+  // Step 2a: Dummy payment — marks order paid without Razorpay
+  const handleDummyPayment = async () => {
+    setPaymentProcessing(true);
+    setShowPaymentPicker(false);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/api/payment/dummy-payment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ orderId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Dummy payment failed");
+      setOrderPlaced(true);
+      clearCart();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setPaymentProcessing(false);
+    }
+  };
 
-      // Step 2: Create Razorpay order
-      setPaymentProcessing(true);
+  // Step 2b: Real Razorpay payment
+  const handleRazorpayPayment = async () => {
+    setPaymentProcessing(true);
+    setShowPaymentPicker(false);
+    const token = localStorage.getItem("token");
+    const totalAmount = parseFloat(getTotalPrice());
+
+    try {
       const paymentOrderResponse = await fetch(`${API_URL}/api/payment/create-order`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          orderId: createdOrderId,
-          amount: totalAmount,
-          email: formData.email,
-          phoneNumber: formData.phone
-        })
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ orderId, amount: totalAmount, email: formData.email, phoneNumber: formData.phone })
       });
 
       const paymentOrderData = await paymentOrderResponse.json();
+      if (!paymentOrderResponse.ok) throw new Error(paymentOrderData.error || "Failed to create payment");
 
-      if (!paymentOrderResponse.ok) {
-        throw new Error(paymentOrderData.error || "Failed to create payment");
-      }
-
-      // Step 3: Open Razorpay checkout
       const options = {
         key: paymentOrderData.keyId,
-        amount: paymentOrderData.amount * 100, // Amount in paise
+        amount: paymentOrderData.amount * 100,
         currency: paymentOrderData.currency,
         name: "KrittikaStyle",
-        description: `Order #${createdOrderId}`,
+        description: `Order #${orderId}`,
         order_id: paymentOrderData.razorpayOrderId,
         handler: async (response) => {
-          // Payment successful - verify on backend
           try {
             const verifyResponse = await fetch(`${API_URL}/api/payment/verify-payment`, {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-              },
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
               body: JSON.stringify({
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
-                orderId: createdOrderId
+                orderId
               })
             });
-
             const verifyData = await verifyResponse.json();
-
-            if (!verifyResponse.ok) {
-              throw new Error(verifyData.error || "Payment verification failed");
-            }
-
-            // Payment verified successfully
+            if (!verifyResponse.ok) throw new Error(verifyData.error || "Payment verification failed");
             setOrderPlaced(true);
             clearCart();
             setPaymentProcessing(false);
-            setLoading(false);
           } catch (err) {
             setError("Payment verified but there was an issue: " + err.message);
             setPaymentProcessing(false);
-            setLoading(false);
           }
         },
-        prefill: {
-          name: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-          contact: formData.phone
-        },
-        notes: {
-          orderId: createdOrderId,
-          address: formData.address,
-          city: formData.city
-        },
-        theme: {
-          color: "var(--primary)"
-        },
+        prefill: { name: `${formData.firstName} ${formData.lastName}`, email: formData.email, contact: formData.phone },
+        notes: { orderId, address: formData.address, city: formData.city },
+        theme: { color: "#667eea" },
         modal: {
           ondismiss: async () => {
-            // User closed payment modal
             setPaymentProcessing(false);
-            setLoading(false);
-            // Mark order as failed
             try {
               await fetch(`${API_URL}/api/payment/handle-failure`, {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                  orderId: createdOrderId,
-                  reason: "User closed payment modal"
-                })
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify({ orderId, reason: "User closed payment modal" })
               });
             } catch (err) {
               console.error("Error marking order as failed:", err);
@@ -249,16 +235,13 @@ const Checkout = () => {
       };
 
       if (window.Razorpay) {
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
+        new window.Razorpay(options).open();
       } else {
         throw new Error("Razorpay script failed to load");
       }
     } catch (err) {
-      console.error("Order error:", err);
       setError(err.message);
       setPaymentProcessing(false);
-      setLoading(false);
     }
   };
 
@@ -675,6 +658,59 @@ const Checkout = () => {
           </form>
         </div>
       </div>
+
+      {/* Payment method picker modal */}
+      {showPaymentPicker && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+        }}>
+          <div style={{
+            background: "white", borderRadius: "12px", padding: "36px",
+            maxWidth: "420px", width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
+          }}>
+            <h2 style={{ margin: "0 0 8px 0", fontSize: "1.4em" }}>Choose Payment Method</h2>
+            <p style={{ margin: "0 0 28px 0", color: "var(--text-secondary)", fontSize: "0.95em" }}>
+              Order #{orderId} · ₹{getTotalPrice()}
+            </p>
+
+            <button
+              onClick={handleRazorpayPayment}
+              style={{
+                width: "100%", padding: "14px", marginBottom: "12px",
+                background: "var(--primary)", color: "white",
+                border: "none", borderRadius: "8px", cursor: "pointer",
+                fontSize: "15px", fontWeight: "600"
+              }}
+            >
+              💳 Pay with Razorpay
+            </button>
+
+            <button
+              onClick={handleDummyPayment}
+              style={{
+                width: "100%", padding: "14px",
+                background: "#f0fdf4", color: "#16a34a",
+                border: "2px solid #16a34a", borderRadius: "8px", cursor: "pointer",
+                fontSize: "15px", fontWeight: "600"
+              }}
+            >
+              ✅ Test Payment (Skip to confirmation)
+            </button>
+
+            <button
+              onClick={() => setShowPaymentPicker(false)}
+              style={{
+                width: "100%", padding: "10px", marginTop: "12px",
+                background: "transparent", color: "var(--text-secondary)",
+                border: "none", cursor: "pointer", fontSize: "14px"
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

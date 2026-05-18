@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { fetchCategories } from "../services/categoryService";
 import "./CategorySidebar.css";
 
@@ -20,9 +20,21 @@ const CategorySidebar = ({ selectedCategory, onCategorySelect }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef(null);
 
   useEffect(() => {
     loadCategories();
+  }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
   const loadCategories = async () => {
@@ -52,7 +64,7 @@ const CategorySidebar = ({ selectedCategory, onCategorySelect }) => {
   };
 
   return (
-    <div className="category-sidebar-wrapper">
+    <div className="category-sidebar-wrapper" ref={wrapperRef}>
       <div className={`category-dropdown ${isOpen ? "open" : ""}`}>
         <button
           className="category-dropdown-trigger"

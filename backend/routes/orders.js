@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require("../db");
 const jwt = require("jsonwebtoken");
 const ShiprocketClient = require("../shiprocketService");
+const { notifyOrderCancelled } = require("../notificationService");
 
 const SECRET = process.env.JWT_SECRET || "supersecret";
 
@@ -955,8 +956,8 @@ router.post("/:id/cancel", authenticateToken, async (req, res) => {
       `UPDATE orders
        SET status          = 'cancelled',
            shiprocket_status = CASE
-             WHEN $2 IS NOT NULL THEN $2
-             WHEN $3 = true      THEN 'CANCELED'
+             WHEN $2::text IS NOT NULL THEN $2::text
+             WHEN $3::boolean = true   THEN 'CANCELED'
              ELSE shiprocket_status
            END
        WHERE id = $1
@@ -965,6 +966,31 @@ router.post("/:id/cancel", authenticateToken, async (req, res) => {
     );
 
     console.log(`Order ${id} cancelled by user ${req.user.id}. Shiprocket cancelled: ${shiprocketCancelled}`);
+
+    // Send cancellation notifications (fire-and-forget)
+    try {
+      const [userResult, itemsResult] = await Promise.all([
+        pool.query("SELECT id, name, email, phone FROM users WHERE id=$1", [req.user.id]),
+        pool.query(
+          `SELECT oi.quantity, oi.price, p.name
+           FROM order_items oi
+           JOIN products p ON oi.product_id = p.id
+           WHERE oi.order_id=$1`,
+          [id]
+        ),
+      ]);
+
+      if (userResult.rows.length > 0) {
+        notifyOrderCancelled({
+          order: dbResult.rows[0],
+          user: userResult.rows[0],
+          items: itemsResult.rows,
+        }).catch((e) => console.error("[Notify] Cancellation error:", e.message));
+      }
+    } catch (notifyErr) {
+      console.error("[Notify] Failed to fetch data for cancellation:", notifyErr.message);
+    }
+
     res.json({
       message: "Order cancelled successfully",
       shiprocketCancelled,

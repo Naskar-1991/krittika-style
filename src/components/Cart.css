@@ -9,7 +9,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 600;
   color: var(--primary-dark, #1a1a2e);
@@ -44,7 +44,7 @@
 }
 
 .cart-empty h3 {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-display);
   font-size: 1.5rem;
   color: var(--primary-dark, #1a1a2e);
   margin: 0 0 8px;
@@ -63,7 +63,7 @@
   color: #fff;
   border: none;
   border-radius: var(--radius-md, 8px);
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.1em;
@@ -100,7 +100,7 @@
 }
 
 .cart-items-header span {
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 400;
   letter-spacing: 0.1em;
@@ -142,14 +142,14 @@
   justify-content: center;
   color: var(--warm-gray, #8c7b6e);
   font-size: 11px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-sans);
   flex-shrink: 0;
 }
 
 .cart-item-info { min-width: 0; }
 
 .cart-item-name {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--primary-dark, #1a1a2e);
@@ -170,7 +170,7 @@
 }
 
 .cart-item-unit-price {
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 500;
   color: var(--primary, #b89a6e);
@@ -212,7 +212,7 @@
   border-left: 1px solid var(--light-gray, #e2e0db);
   border-right: 1px solid var(--light-gray, #e2e0db);
   text-align: center;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 500;
   color: var(--primary-dark, #1a1a2e);
@@ -233,7 +233,7 @@
 }
 
 .cart-item-total {
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 600;
   color: var(--primary-dark, #1a1a2e);
@@ -277,7 +277,7 @@
 }
 
 .cart-summary-header h3 {
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 400;
   letter-spacing: 0.12em;
@@ -311,7 +311,7 @@
 }
 
 .cart-summary-row.total .amount {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: var(--font-display);
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--primary, #b89a6e);
@@ -328,7 +328,7 @@
   color: #fff;
   border: none;
   border-radius: var(--radius-md, 8px);
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.12em;

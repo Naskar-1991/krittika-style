@@ -39,6 +39,7 @@ const Login = () => {
   const [loginMethod, setLoginMethod] = useState("email"); // 'email' or 'mobile'
   const [otpData, setOtpData] = useState({
     mobileHint: "",
+    emailHint: "",
     expiresIn: 10,
   });
   const [error, setError] = useState("");
@@ -106,6 +107,7 @@ const Login = () => {
       // Move to OTP step
       setOtpData({
         mobileHint: data.mobileHint,
+        emailHint: data.emailHint || "",
         expiresIn: data.expiresIn,
       });
       setStep("otp");
@@ -261,7 +263,7 @@ const Login = () => {
                 )}
 
                 <p className="auth-subtitle" style={{ margin: "8px 0 16px" }}>
-                  We'll send an OTP to your registered mobile number for verification
+                  We'll send an OTP to your registered mobile number and email address
                 </p>
 
                 <button
@@ -284,6 +286,7 @@ const Login = () => {
               <OTPVerification
                 email={loginMethod === "email" ? email : ""}
                 mobileHint={otpData.mobileHint}
+                emailHint={otpData.emailHint}
                 expiresIn={otpData.expiresIn}
                 onVerify={handleVerifyOTP}
                 onResend={handleResendOTP}

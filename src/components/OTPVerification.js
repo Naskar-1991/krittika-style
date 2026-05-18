@@ -9,6 +9,7 @@ const IcoClock = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="non
 const OTPVerification = ({
   email,
   mobileHint,
+  emailHint,
   expiresIn = 10,
   onVerify,
   onResend,
@@ -95,9 +96,20 @@ const OTPVerification = ({
         {/* Header */}
         <div className="otp-header">
           <div className="otp-icon"><IcoPhone /></div>
-          <h2>Verify Your Mobile Number</h2>
+          <h2>Verify Your Identity</h2>
           <p className="otp-subtitle">
-            We've sent a verification code to your mobile ending in <strong>{mobileHint}</strong>
+            {emailHint ? (
+              <>
+                We've sent a verification code to your mobile ending in{" "}
+                <strong>{mobileHint}</strong> and email{" "}
+                <strong>{emailHint}</strong>
+              </>
+            ) : (
+              <>
+                We've sent a verification code to your mobile ending in{" "}
+                <strong>{mobileHint}</strong>
+              </>
+            )}
           </p>
         </div>
 

@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
     if (token) {
       // Fetch user profile to get role
-      fetch(`${API_URL}api/auth/profile`, {
+      fetch(`${API_URL}/api/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then(res => res.json())

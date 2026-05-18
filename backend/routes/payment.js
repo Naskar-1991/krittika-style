@@ -4,6 +4,7 @@ const pool = require("../db");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const Razorpay = require("razorpay");
+const { notifyOrderConfirmed } = require("../notificationService");
 
 const SECRET = process.env.JWT_SECRET || "supersecret";
 
@@ -131,6 +132,30 @@ router.post("/verify-payment", authenticateToken, async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
+    // Send order confirmation notifications (fire-and-forget — never block the response)
+    try {
+      const [userResult, itemsResult] = await Promise.all([
+        pool.query("SELECT id, name, email, phone FROM users WHERE id=$1", [req.user.id]),
+        pool.query(
+          `SELECT oi.quantity, oi.price, p.name
+           FROM order_items oi
+           JOIN products p ON oi.product_id = p.id
+           WHERE oi.order_id=$1`,
+          [orderId]
+        ),
+      ]);
+
+      if (userResult.rows.length > 0) {
+        notifyOrderConfirmed({
+          order: { id: orderId, total_amount: payment.amount / 100 },
+          user: userResult.rows[0],
+          items: itemsResult.rows,
+        }).catch((e) => console.error("[Notify] Confirmation error:", e.message));
+      }
+    } catch (notifyErr) {
+      console.error("[Notify] Failed to fetch data for confirmation:", notifyErr.message);
+    }
+
     res.json({
       success: true,
       message: "Payment verified successfully",
@@ -161,6 +186,34 @@ router.get("/status/:orderId", authenticateToken, async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Dummy payment for testing — marks order as paid without going through Razorpay
+router.post("/dummy-payment", authenticateToken, async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ error: "orderId is required" });
+
+    const result = await pool.query(
+      `UPDATE orders
+       SET payment_status = 'completed',
+           payment_method = 'dummy',
+           payment_date = NOW(),
+           status = 'processing'
+       WHERE id = $1 AND user_id = $2
+       RETURNING id, payment_status, status`,
+      [orderId, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    res.json({ success: true, order: result.rows[0] });
+  } catch (err) {
+    console.error("Dummy payment error:", err);
     res.status(500).json({ error: err.message });
   }
 });

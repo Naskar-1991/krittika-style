@@ -20,6 +20,7 @@ const logoRoute = require("./routes/logo");
 const reviewsRoute = require("./routes/reviews");
 const couponsRoute = require("./routes/coupons");
 const adminStatsRoute = require("./routes/admin-stats");
+const bannersRoute = require("./routes/banners");
 
 const app = express();
 
@@ -98,6 +99,7 @@ app.use("/api/admin/stats", adminStatsRoute);
 app.use("/api/logo", logoRoute);
 app.use("/api/reviews", reviewsRoute);
 app.use("/api/coupons", couponsRoute);
+app.use("/api/banners", bannersRoute);
 
 // ==================== AUTO MIGRATIONS ====================
 const pool = require("./db");
@@ -148,6 +150,19 @@ const runMigrations = async () => {
         description   TEXT,
         is_active     BOOLEAN NOT NULL DEFAULT true,
         created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // Banners table for homepage carousel
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS banners (
+        id         SERIAL PRIMARY KEY,
+        image_url  TEXT NOT NULL,
+        title      VARCHAR(255),
+        link_url   VARCHAR(500),
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        is_active  BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
 

@@ -29,6 +29,7 @@ import AdminUsers from "./admin/AdminUsers";
 import ManageOrders from "./admin/ManageOrders";
 import AdminReturns from "./admin/AdminReturns";
 import AdminReviews from "./admin/AdminReviews";
+import ManageBanners from "./admin/ManageBanners";
 
 function AppContent() {
   return (
@@ -203,6 +204,16 @@ function AppContent() {
           <ProtectedRoute adminOnly={true}>
             <AdminLayout>
               <AdminReviews />
+            </AdminLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/banners"
+        element={
+          <ProtectedRoute adminOnly={true}>
+            <AdminLayout>
+              <ManageBanners />
             </AdminLayout>
           </ProtectedRoute>
         }

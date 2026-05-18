@@ -16,8 +16,10 @@ const ManageProducts = () => {
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [imagePreviews, setImagePreviews] = useState([]);
-  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);   // data-URL previews for newly selected files
+  const [imageFiles, setImageFiles] = useState([]);          // File objects for new uploads
+  const [existingImages, setExistingImages] = useState([]); // {id, image_url} from server
+  const [removedImageIds, setRemovedImageIds] = useState([]); // IDs to delete on save
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -126,9 +128,15 @@ const ManageProducts = () => {
     setError("");
   };
 
+  // Remove a newly-selected (not yet saved) image
   const removeImagePreview = (index) => {
-    setImagePreviews(imagePreviews.filter((_, i) => i !== index));
-    setImageFiles(imageFiles.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Remove a server-saved image — marks it for deletion on save
+  const removeExistingImage = (imageId) => {
+    setRemovedImageIds(prev => [...prev, imageId]);
   };
 
   const handleSubmit = async (e) => {
@@ -154,9 +162,14 @@ const ManageProducts = () => {
       form.append("stock", formData.stock);
       form.append("category_id", formData.category_id || "");
       
-      // Add multiple image files
+      // New image files to upload
       imageFiles.forEach((file) => {
         form.append("images", file);
+      });
+
+      // Existing image IDs to delete
+      removedImageIds.forEach((id) => {
+        form.append("removeImageIds", id);
       });
 
       response = await fetch(url, {
@@ -206,12 +219,9 @@ const ManageProducts = () => {
       category_id: product.category_id || "",
     });
 
-    if (product.images && product.images.length > 0) {
-      setImagePreviews(product.images.map(img => img.image_url));
-    } else {
-      setImagePreviews([]);
-    }
-
+    setExistingImages(product.images || []);
+    setRemovedImageIds([]);
+    setImagePreviews([]);   // clear any leftover new-upload previews
     setImageFiles([]);
     setEditingId(product.id);
     setShowForm(true);
@@ -259,6 +269,8 @@ const ManageProducts = () => {
     });
     setImagePreviews([]);
     setImageFiles([]);
+    setExistingImages([]);
+    setRemovedImageIds([]);
     setEditingId(null);
     setShowForm(false);
   };
@@ -417,53 +429,115 @@ const ManageProducts = () => {
                   </small>
                 </div>
 
-                {imagePreviews && imagePreviews.length > 0 && (
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-                    gap: "10px",
-                    marginTop: "15px",
-                  }}>
-                    {imagePreviews.map((preview, index) => (
-                      <div key={index} style={{
-                        position: "relative",
-                        border: "2px solid #ddd",
-                        borderRadius: "4px",
-                        overflow: "hidden",
-                        aspectRatio: "1",
-                        backgroundColor: "#f9f9f9",
-                      }}>
-                        <img
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImagePreview(index)}
-                          style={{
-                            position: "absolute",
-                            top: "2px",
-                            right: "2px",
-                            background: "rgba(255,0,0,0.8)",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "50%",
-                            width: "20px",
-                            height: "20px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                          }}
-                          title="Remove image"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                {/* ── Existing saved images ── */}
+                {existingImages.filter(img => !removedImageIds.includes(img.id)).length > 0 && (
+                  <div style={{ marginTop: "12px" }}>
+                    <p style={{ fontSize: "12px", color: "#666", marginBottom: "6px", fontWeight: "600" }}>
+                      Saved images ({existingImages.filter(img => !removedImageIds.includes(img.id)).length})
+                    </p>
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+                      gap: "10px",
+                    }}>
+                      {existingImages
+                        .filter(img => !removedImageIds.includes(img.id))
+                        .map((img) => (
+                          <div key={img.id} style={{
+                            position: "relative",
+                            border: "2px solid #28a745",
+                            borderRadius: "4px",
+                            overflow: "hidden",
+                            aspectRatio: "1",
+                            backgroundColor: "#f9f9f9",
+                          }}>
+                            <img
+                              src={img.image_url}
+                              alt="Saved"
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeExistingImage(img.id)}
+                              style={{
+                                position: "absolute",
+                                top: "2px",
+                                right: "2px",
+                                background: "rgba(220,53,69,0.85)",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "50%",
+                                width: "22px",
+                                height: "22px",
+                                cursor: "pointer",
+                                fontSize: "14px",
+                                lineHeight: "1",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                              title="Remove this image"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── New upload previews ── */}
+                {imagePreviews.length > 0 && (
+                  <div style={{ marginTop: "12px" }}>
+                    <p style={{ fontSize: "12px", color: "#666", marginBottom: "6px", fontWeight: "600" }}>
+                      New images to upload ({imagePreviews.length})
+                    </p>
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+                      gap: "10px",
+                    }}>
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} style={{
+                          position: "relative",
+                          border: "2px solid #667eea",
+                          borderRadius: "4px",
+                          overflow: "hidden",
+                          aspectRatio: "1",
+                          backgroundColor: "#f9f9f9",
+                        }}>
+                          <img
+                            src={preview}
+                            alt={`New ${index + 1}`}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImagePreview(index)}
+                            style={{
+                              position: "absolute",
+                              top: "2px",
+                              right: "2px",
+                              background: "rgba(220,53,69,0.85)",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "50%",
+                              width: "22px",
+                              height: "22px",
+                              cursor: "pointer",
+                              fontSize: "14px",
+                              lineHeight: "1",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                            title="Remove image"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

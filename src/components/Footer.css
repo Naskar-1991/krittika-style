@@ -215,7 +215,7 @@
 }
 
 .pay-badge {
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.04em;

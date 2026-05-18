@@ -248,24 +248,32 @@ const Products = () => {
 
             <div className="filter-section">
               <h3>Price Range</h3>
-              <div className="price-filter">
-                <label>Min: ₹{minPrice.toLocaleString("en-IN")}</label>
-                <input
-                  type="range" min="0" max="50000" step="500"
-                  value={minPrice}
-                  onChange={(e) => { const v = Number(e.target.value); if (v <= maxPrice) setMinPrice(v); }}
-                  className="price-slider"
-                />
+              <div className="pr-chip">
+                <span className="pr-chip-val">₹{minPrice.toLocaleString("en-IN")}</span>
+                <span className="pr-chip-dash">–</span>
+                <span className="pr-chip-val">₹{maxPrice.toLocaleString("en-IN")}</span>
               </div>
-              <div className="price-filter">
-                <label>Max: ₹{maxPrice.toLocaleString("en-IN")}</label>
-                <input
-                  type="range" min="0" max="50000" step="500"
-                  value={maxPrice}
-                  onChange={(e) => { const v = Number(e.target.value); if (v >= minPrice) setMaxPrice(v); }}
-                  className="price-slider"
-                />
+              <div className="pr-row">
+                <span className="pr-lbl">Min</span>
+                <div className="pr-wrap">
+                  <div className="pr-bg" />
+                  <div className="pr-fill" style={{ width: `${(minPrice/50000)*100}%` }} />
+                  <input type="range" min="0" max="50000" step="500" value={minPrice}
+                    onChange={(e) => { const v = Number(e.target.value); if (v <= maxPrice) setMinPrice(v); }}
+                    className="pr-input" />
+                </div>
               </div>
+              <div className="pr-row">
+                <span className="pr-lbl">Max</span>
+                <div className="pr-wrap">
+                  <div className="pr-bg" />
+                  <div className="pr-fill" style={{ width: `${(maxPrice/50000)*100}%` }} />
+                  <input type="range" min="0" max="50000" step="500" value={maxPrice}
+                    onChange={(e) => { const v = Number(e.target.value); if (v >= minPrice) setMaxPrice(v); }}
+                    className="pr-input" />
+                </div>
+              </div>
+              <div className="pr-ends"><span>₹0</span><span>₹50,000</span></div>
             </div>
 
             <div className="mobile-filter-actions">
@@ -316,24 +324,32 @@ const Products = () => {
 
             <div className="filter-section">
               <h3>Price Range</h3>
-              <div className="price-filter">
-                <label>Min: ₹{minPrice.toLocaleString("en-IN")}</label>
-                <input
-                  type="range" min="0" max="50000" step="500"
-                  value={minPrice}
-                  onChange={(e) => { const v = Number(e.target.value); if (v <= maxPrice) setMinPrice(v); }}
-                  className="price-slider"
-                />
+              <div className="pr-chip">
+                <span className="pr-chip-val">₹{minPrice.toLocaleString("en-IN")}</span>
+                <span className="pr-chip-dash">–</span>
+                <span className="pr-chip-val">₹{maxPrice.toLocaleString("en-IN")}</span>
               </div>
-              <div className="price-filter">
-                <label>Max: ₹{maxPrice.toLocaleString("en-IN")}</label>
-                <input
-                  type="range" min="0" max="50000" step="500"
-                  value={maxPrice}
-                  onChange={(e) => { const v = Number(e.target.value); if (v >= minPrice) setMaxPrice(v); }}
-                  className="price-slider"
-                />
+              <div className="pr-row">
+                <span className="pr-lbl">Min</span>
+                <div className="pr-wrap">
+                  <div className="pr-bg" />
+                  <div className="pr-fill" style={{ width: `${(minPrice/50000)*100}%` }} />
+                  <input type="range" min="0" max="50000" step="500" value={minPrice}
+                    onChange={(e) => { const v = Number(e.target.value); if (v <= maxPrice) setMinPrice(v); }}
+                    className="pr-input" />
+                </div>
               </div>
+              <div className="pr-row">
+                <span className="pr-lbl">Max</span>
+                <div className="pr-wrap">
+                  <div className="pr-bg" />
+                  <div className="pr-fill" style={{ width: `${(maxPrice/50000)*100}%` }} />
+                  <input type="range" min="0" max="50000" step="500" value={maxPrice}
+                    onChange={(e) => { const v = Number(e.target.value); if (v >= minPrice) setMaxPrice(v); }}
+                    className="pr-input" />
+                </div>
+              </div>
+              <div className="pr-ends"><span>₹0</span><span>₹50,000</span></div>
             </div>
 
             <button onClick={applyFilters} className="reset-filters-btn" style={{ marginBottom: "8px" }}>
