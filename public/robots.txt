@@ -1,3 +1,33 @@
-# https://www.robotstxt.org/robotstxt.html
+# Krittika Style — robots.txt
+# https://www.krittikasarees.com
+
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /checkout
+Disallow: /orders
+Disallow: /returns
+Disallow: /profile
+Disallow: /wishlist
+
+# Sitemap location
+Sitemap: https://www.krittikasarees.com/sitemap.xml
+
+# Allow Google Image Bot full access for product images
+User-agent: Googlebot-Image
+Allow: /
+
+# AI training crawlers — allow for GEO / AI citation visibility
+# Remove the blocks below if you want to prevent AI training use
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /

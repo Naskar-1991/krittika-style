@@ -5,8 +5,41 @@ import Hero from "../components/Hero";
 import ProductCard from "../components/ProductCard";
 import ProductReel from "../components/ProductReel";
 import { fetchCategories } from "../services/categoryService";
+import SEOHead from "../components/SEOHead";
 import "./Home.css";
 import API_URL from "../api_connection/BackendAPIConnection";
+
+const HOME_SCHEMA = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Krittika Style",
+    "url": "https://www.krittikasarees.com",
+    "logo": "https://www.krittikasarees.com/logo512.png",
+    "description": "Handwoven Indian sarees — Banarasi silk, Kanjivaram, Handloom cotton and more, shipped across India.",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer service",
+      "email": "support@krittikasarees.com",
+      "availableLanguage": ["English", "Hindi", "Bengali"]
+    },
+    "sameAs": []
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Krittika Style",
+    "url": "https://www.krittikasarees.com",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://www.krittikasarees.com/products?search={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+];
 
 /* ── Category SVG icons ── */
 const CatIconDiamond = () => (
@@ -244,6 +277,10 @@ function Home() {
 
   return (
     <div className="home-page">
+      <SEOHead
+        canonical="https://www.krittikasarees.com/"
+        schema={HOME_SCHEMA}
+      />
       <HomeBanner />
 
       {/* Featured Sarees */}

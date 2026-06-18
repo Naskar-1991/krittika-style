@@ -376,7 +376,9 @@ const Checkout = () => {
             padding: "20px",
             marginBottom: "20px"
           }}>
-            {cart.map(item => (
+            {cart.map(item => {
+              const imgSrc = item.image || item.images?.[0]?.image_url || null;
+              return (
               <div key={item.id} style={{
                 display: "flex",
                 gap: "12px",
@@ -384,9 +386,9 @@ const Checkout = () => {
                 marginBottom: "12px",
                 borderBottom: "1px solid var(--border)"
               }}>
-                {item.image && (
+                {imgSrc && (
                   <img
-                    src={item.image}
+                    src={imgSrc}
                     alt={item.name}
                     style={{
                       width: "60px",
@@ -406,7 +408,8 @@ const Checkout = () => {
                   ₹{(item.price * (item.quantity || 1)).toFixed(2)}
                 </div>
               </div>
-            ))}
+            );
+            })}
 
             <div style={{
               borderTop: "2px solid var(--primary)",

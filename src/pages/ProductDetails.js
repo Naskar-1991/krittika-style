@@ -3,11 +3,69 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { WishlistContext } from "../context/WishlistContext";
 import { AuthContext } from "../context/AuthContext";
+import SEOHead from "../components/SEOHead";
 import "./ProductDetails.css";
 import API_URL from "../api_connection/BackendAPIConnection";
 import ReviewForm from "../components/ReviewForm";
 import ReviewsList from "../components/ReviewsList";
 import RatingSummary from "../components/RatingSummary";
+
+const SITE_URL = "https://www.krittikasarees.com";
+
+function buildProductSchema(product, currentImage) {
+  const priceINR = Number(product.price);
+  const images = product.images && product.images.length > 0
+    ? product.images.map(i => i.image_url)
+    : (currentImage ? [currentImage] : []);
+
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "description": product.description || `${product.name} — handwoven saree by Krittika Style.`,
+    "image": images,
+    "brand": { "@type": "Brand", "name": "Krittika Style" },
+    "offers": {
+      "@type": "Offer",
+      "url": `${SITE_URL}/product/${product.id}`,
+      "priceCurrency": "INR",
+      "price": priceINR.toFixed(2),
+      "availability": product.stock > 0
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      "seller": { "@type": "Organization", "name": "Krittika Style" },
+      "shippingDetails": {
+        "@type": "OfferShippingDetails",
+        "shippingRate": {
+          "@type": "MonetaryAmount",
+          "value": "0",
+          "currency": "INR"
+        },
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "IN"
+        }
+      }
+    }
+  };
+
+  if (product.sku) schema.sku = product.sku;
+  if (product.category) schema.category = product.category;
+
+  return schema;
+}
+
+function buildBreadcrumbSchema(product) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home",    "item": SITE_URL },
+      { "@type": "ListItem", "position": 2, "name": "Sarees",  "item": `${SITE_URL}/products` },
+      { "@type": "ListItem", "position": 3, "name": product.name, "item": `${SITE_URL}/product/${product.id}` }
+    ]
+  };
+}
 
 /* ── Inline SVG icons ── */
 const IconHeart = ({ filled }) => (
@@ -215,8 +273,23 @@ function ProductDetails() {
     );
   }
 
+  const productDesc = product.description
+    ? product.description.slice(0, 155)
+    : `Shop ${product.name} — handwoven saree by Krittika Style. Free delivery across India.`;
+
   return (
     <div className="product-details-page">
+      <SEOHead
+        title={product.name}
+        description={productDesc}
+        canonical={`${SITE_URL}/product/${product.id}`}
+        image={currentImage || undefined}
+        type="product"
+        schema={[
+          buildProductSchema(product, currentImage),
+          buildBreadcrumbSchema(product),
+        ]}
+      />
       <div className="container">
         {/* Breadcrumb */}
         <div className="breadcrumb">

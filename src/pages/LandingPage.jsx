@@ -7,6 +7,7 @@ import {
   useSpring,
   AnimatePresence,
 } from "motion/react";
+import SEOHead from "../components/SEOHead";
 
 /* ─────────────────────────────────────────────────────────────
    Color tokens — extracted verbatim from src/index.css :root
@@ -916,6 +917,11 @@ function FooterSection() {
 export default function LandingPage() {
   return (
     <AnimatePresence>
+      <SEOHead
+        title="Handwoven Indian Sarees"
+        description="Discover Krittika Style — handwoven Banarasi silk, Kanjivaram, Handloom sarees crafted by master artisans. Shop with free delivery across India."
+        canonical="https://www.krittikasarees.com/landing"
+      />
       <div style={{
         background: C.white,
         color:      C.textPrimary,

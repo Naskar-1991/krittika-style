@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import SEOHead from "../components/SEOHead";
 import "./Signup.css";
 import OTPVerification from "../components/OTPVerification";
 import API_URL from "../api_connection/BackendAPIConnection";
@@ -172,6 +173,7 @@ const Signup = () => {
 
   return (
     <div className="auth-page signup-page">
+      <SEOHead title="Create Account" noindex={true} />
       <div className="auth-container">
         <div className="auth-card">
           {/* Logo */}

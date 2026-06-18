@@ -4,6 +4,7 @@ import { ReturnsContext } from "../context/ReturnsContext";
 import { useNavigate, Link } from "react-router-dom";
 import ReturnRequestModal from "../components/ReturnRequestModal";
 import TrackOrderModal from "../components/TrackOrderModal";
+import SEOHead from "../components/SEOHead";
 import "./MyOrders.css";
 import API_URL from "../api_connection/BackendAPIConnection";
 
@@ -198,6 +199,7 @@ function MyOrders() {
 
   return (
     <div className="my-orders-page">
+      <SEOHead title="My Orders" noindex={true} />
       <div className="container">
         <div className="orders-header">
           <h1>My Orders</h1>

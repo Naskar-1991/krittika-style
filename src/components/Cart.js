@@ -39,11 +39,13 @@ const Cart = () => {
                 <span>{itemCount} {itemCount === 1 ? "item" : "items"}</span>
               </div>
 
-              {cart.map((item) => (
+              {cart.map((item) => {
+                const imgSrc = item.image || item.images?.[0]?.image_url || null;
+                return (
                 <div key={item.id} className="cart-item">
-                  {item.image ? (
+                  {imgSrc ? (
                     <img
-                      src={item.image}
+                      src={imgSrc}
                       alt={item.name}
                       className="cart-item-img"
                       onError={(e) => { e.target.style.display = "none"; }}
@@ -103,7 +105,8 @@ const Cart = () => {
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Summary */}

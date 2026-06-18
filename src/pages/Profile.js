@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import SEOHead from "../components/SEOHead";
 import "./Profile.css";
 import API_URL from "../api_connection/BackendAPIConnection";
 
@@ -214,6 +215,7 @@ function Profile() {
 
   return (
     <div className="profile-page">
+      <SEOHead title="My Profile" noindex={true} />
       <div className="container">
         <div className="profile-header">
           <h1><IcoUser /> My Profile</h1>
