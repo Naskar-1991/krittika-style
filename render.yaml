@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: krittika-style
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5500
+
+  - type: web
+    name: krittika-style-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./build
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://krittika-style.onrender.com
+      - key: REACT_APP_ENV
+        value: production
